@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='images/adminlogo.svg') }}">
+    <title>Admin Login - Document Request</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --bg-main: #0f111a;
+            --bg-card: #161925;
+            --accent: #2cc5ad;
+            --text-main: #ffffff;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            background-image: radial-gradient(circle at 50% -20%, #1e2a3a 0%, #0f111a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .login-container {
+            background-color: var(--bg-card);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            transition: transform 0.3s ease;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .login-header .icon-box {
+            width: 60px;
+            height: 60px;
+            background: rgba(44, 197, 173, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: var(--accent);
+            font-size: 28px;
+        }
+
+        .login-container h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .login-container p {
+            color: #a0a4b8;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #5a6268;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(44, 197, 173, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent);
+            color: #0f111a;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background-color: #24a894;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(44, 197, 173, 0.3);
+        }
+
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .flash-messages li {
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flash-messages .danger {
+            background-color: rgba(255, 77, 77, 0.1);
+            color: #ff4d4d;
+            border: 1px solid rgba(255, 77, 77, 0.2);
+        }
+
+        .back-to-user {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .back-to-user a {
+            color: #a0a4b8;
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.3s;
+        }
+
+        .back-to-user a:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="icon-box">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h2>Admin Login</h2>
+            <p>Access the control panel</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        {{ message }}
+                    </li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="email">Email / Username</label>
+                <div class="input-wrapper">
+                    <i class="bi bi-person-fill"></i>
+                    <input type="email" id="email" name="email" placeholder="admin@gmail.com" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <i class="bi bi-key-fill"></i>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-login">
+                Sign In <i class="bi bi-arrow-right-short ms-1"></i>
+            </button>
+        </form>
+        
+        <div class="back-to-user">
+            <a href="{{ url_for('user.login') }}">
+                <i class="bi bi-arrow-left me-1"></i> Back to User Portal
+            </a>
+        </div>
+    </div>
+</body>
+</html>

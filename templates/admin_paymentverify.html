@@ -1,0 +1,195 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<style>
+    /* Payment Dashboard Specific Styles */
+    .payment-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .payment-header {
+        padding: 20px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Dynamic Header Colors */
+    .status-verified { color: #2cc5ad; } 
+    .status-rejected { color: #ff4d4d; } 
+    .status-pending { color: #ffc107; }  
+
+    .table thead th {
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--accent);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table tbody td {
+        padding: 15px;
+        color: #000; 
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+        font-size: 14px;
+    }
+
+    .btn-view-proof {
+        background: rgba(44, 197, 173, 0.1);
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        font-size: 12px;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+    .btn-view-proof:hover {
+        background: var(--accent);
+        color: #000;
+    }
+
+    .btn-action {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 6px 12px;
+        border-radius: 6px;
+    }
+
+    .ref-no-badge {
+        background: rgba(0,0,0,0.05);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        color: #000;
+    }
+</style>
+
+<div class="container-fluid p-4">
+    <div class="payment-card">
+        <div class="payment-header">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-shield-check me-2"></i>
+                {% if current_status == 'verified' %}
+                    <span class="status-verified text-uppercase">Approved Payments (PAID)</span>
+                {% elif current_status == 'rejected' %}
+                    <span class="status-rejected text-uppercase">Rejected Payments</span>
+                {% else %}
+                    <span class="status-pending text-uppercase">Payment Verification Dashboard</span>
+                {% endif %}
+            </h5>
+            <span class="badge bg-dark border border-secondary text-white">
+                {{ payments|length }} Total Records
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Req ID</th>
+                        <th>Student Name</th>
+                        <th>Amount Paid</th>
+                        <th>Reference No.</th>
+                        <th>Proof of Payment</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td class="ps-4 fw-bold">#{{ p.req_id }}</td>
+                        <td class="fw-medium">{{ p.firstname }} {{ p.lastname }}</td>
+                        <td>
+                            <span class="fw-bold" style="color: #2cc5ad;">₱ {{ "%.2f"|format(p.amount_paid|float) }}</span>
+                        </td>
+                        <td>
+                            <span class="ref-no-badge">{{ p.reference_no }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('static', filename='uploads/proofs/' + p.proof_image) }}" 
+                               target="_blank" class="btn btn-sm btn-view-proof">
+                                <i class="bi bi-eye-fill me-1"></i> VIEW IMAGE
+                            </a>
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-2">
+                                {% if current_status == 'pending' %}
+                                    <a href="{{ url_for('admin_payment.approve_payment', pay_id=p.pay_id, req_id=p.req_id) }}" 
+                                       class="btn btn-sm btn-success btn-action">
+                                       <i class="bi bi-check-lg"></i> Approve
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-danger btn-action" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#rejectModal"
+                                            onclick="setRejectData('{{ p.pay_id }}', '{{ p.req_id }}', '{{ p.firstname }} {{ p.lastname }}')">
+                                       <i class="bi bi-x-lg"></i> Reject
+                                    </button>
+                                {% else %}
+                                    <a href="{{ url_for('admin_payment.delete_payment', pay_id=p.pay_id, req_id=p.req_id, status=current_status) }}" 
+                                       class="btn btn-sm btn-outline-danger btn-action"
+                                       onclick="return confirm('Are you sure you want to delete this payment record?')">
+                                       <i class="bi bi-trash3-fill"></i> Delete
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+                            No payment records found for this section.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <form action="{{ url_for('admin_payment.reject_payment') }}" method="POST">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Reject Payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>You are rejecting the payment for <strong id="student_name_display" class="text-info"></strong>.</p>
+                    
+                    <input type="hidden" name="pay_id" id="modal_pay_id">
+                    <input type="hidden" name="req_id" id="modal_req_id">
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for Rejection:</label>
+                        <textarea name="reason" id="reason" class="form-control bg-dark text-white border-secondary" rows="4" placeholder="e.g. Reference number does not match, image is blurry..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-modal="dismiss">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setRejectData(payId, reqId, studentName) {
+        document.getElementById('modal_pay_id').value = payId;
+        document.getElementById('modal_req_id').value = reqId;
+        document.getElementById('student_name_display').innerText = studentName;
+    }
+</script>
+{% endblock %}

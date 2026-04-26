@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="status-summary-bar mb-5">
+        <div class="row align-items-center">
+            <div class="col-lg-7 col-xl-8">
+                <p class="greeting mb-2 text-black opacity-90">Hello, <span class="name">{{ student.lastname if student and student.lastname else "Student" }}</span>!</p>
+                <p class="text-black opacity-75 mb-0" style="font-size: 0.9rem;">
+                    Welcome back to your Document Request portal. <br>
+                    Please note that you can only request documents that are available in the system. <br>
+                    Document processing may take 7-15 business days.
+                </p>
+            </div>
+            <div class="col-lg-5 col-xl-4 mt-4 mt-lg-0">
+                <div class="row g-2 text-center">
+                    <div class="col-4 stat-item">
+                        <i class="fas fa-file-alt stat-icon text-info"></i>
+                        <h6 class="fw-bold mt-1 mb-0 text-info">{{ total_requests }}</h6>
+                        <p class="text-black opacity-75" style="font-size: 0.75rem;">Total Requests</p>
+                    </div>
+                    <div class="col-4 stat-item">
+                        <i class="fas fa-hourglass-half stat-icon text-danger"></i>
+                        <h6 class="fw-bold mt-1 mb-0 text-danger">{{ pending_count }}</h6>
+                        <p class="text-black opacity-75" style="font-size: 0.75rem;">Pending</p>
+                    </div>
+                    <div class="col-4 stat-item">
+                        <i class="fas fa-credit-card stat-icon text-warning"></i>
+                        <h6 class="fw-bold mt-1 mb-0 text-warning">₱{{ "%.2f"|format(unpaid_bill) }}</h6>
+                        <p class="text-black opacity-75" style="font-size: 0.75rem;">Unpaid Bill</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="action-card text-center">
+                <i class="card-icon fas fa-folder-plus"></i>
+                <h5 class="card-title">New Request</h5>
+                <p class="card-text">Initiate a request for Transcripts, Good Moral Certs, Diplomas, and more.</p>
+                <a href="{{ url_for('user.new_request') }}" class="btn card-btn">Start Request</a>
+            </div>
+        </div>                   
+
+        <div class="col-md-6 col-lg-3">
+            <div class="action-card text-center">
+                <i class="card-icon fas fa-list-alt"></i>
+                <h5 class="card-title">Request Status</h5>
+                <p class="card-text">Track the progress and history of all your document requests.</p>
+                <a href="{{ url_for('user.history') }}" class="btn card-btn">View Status</a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="action-card text-center">
+                <i class="card-icon fas fa-credit-card"></i>
+                <h5 class="card-title">Payments</h5>
+                <p class="card-text">View pending bills, final prices, and upload proof of payment.</p>
+                <a href="{{ url_for('user.payment') }}" class="btn card-btn">Pay Bills</a>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="action-card text-center">
+                <i class="card-icon fas fa-cog"></i>
+                <h5 class="card-title">Profile & Settings</h5>
+                <p class="card-text">Update your personal information, address, and contact details.</p>
+                <a href="{{ url_for('user.student_info') }}" class="btn card-btn">Update Profile</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 mt-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="action-card text-center">
+                <i class="card-icon fas fa-book-open"></i>
+                <h5 class="card-title">Document List</h5>
+                <p class="card-text">See the full list of documents available for request and their standard fees.</p>
+                <a href="{{ url_for('user.available_documents') }}" class="btn card-btn">View List</a>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="action-card text-center">
+                <i class="card-icon fas fa-question-circle"></i>
+                <h5 class="card-title">Help & Support</h5>
+                <p class="card-text">Find answers to frequently asked questions about the request process.</p>
+                <a href="{{ url_for('user.help_support') }}" class="btn card-btn">Get Help</a>
+            </div>
+        </div>
+        
+
+    </div>
+
+{% endblock %}

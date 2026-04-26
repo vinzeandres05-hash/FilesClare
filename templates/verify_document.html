@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Verification — St. Clare Document Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f111a 0%, #1a1d2e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .verify-card {
+            border-radius: 16px;
+            padding: 2.5rem;
+            max-width: 580px;
+            width: 100%;
+            margin: 2rem auto;
+        }
+        .verify-card.success {
+            background: #1f2235;
+            border: 2px solid #2cc5ad;
+            box-shadow: 0 0 40px rgba(44, 197, 173, 0.15);
+        }
+        .verify-card.failure {
+            background: #1f2235;
+            border: 2px solid #dc3545;
+            box-shadow: 0 0 40px rgba(220, 53, 69, 0.15);
+        }
+        .stamp-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        .stamp-circle.ok  { background: rgba(44, 197, 173, .15); }
+        .stamp-circle.err { background: rgba(220, 53, 69, .15); }
+        .detail-table td, .detail-table th {
+            color: #cdd4e0;
+            font-size: 0.9rem;
+            padding: 0.55rem 0.75rem;
+            border-color: rgba(255,255,255,.08) !important;
+        }
+        .detail-table th { color: #8892a4; font-weight: 600; width: 45%; }
+        .token-box {
+            background: rgba(0,0,0,.35);
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #2cc5ad;
+            word-break: break-all;
+        }
+        .school-header { color: #a0a4b8; font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; }
+        .school-name   { color: #fff; font-weight: 700; font-size: 1.05rem; }
+        #qrCanvas, #qrCanvas img, #qrCanvas canvas { border-radius: 8px; }
+    </style>
+</head>
+<body>
+<div class="container px-3">
+
+{% if doc %}
+<div class="verify-card success">
+
+    <div class="text-center mb-4">
+        <div class="school-header mb-1">St. Clare College Caloocan</div>
+        <div class="school-name mb-3"><i class="fas fa-shield-alt text-info me-2"></i>Document Verification Portal</div>
+        <div class="stamp-circle ok">
+            <i class="fas fa-check-circle fa-3x text-success"></i>
+        </div>
+        <h4 class="text-success fw-bold mb-1">DOCUMENT VERIFIED</h4>
+        <p class="text-secondary" style="font-size:0.85rem;">
+            This document has been officially processed and released<br>by St. Clare College Caloocan.
+        </p>
+    </div>
+
+    <table class="table table-dark detail-table mb-4">
+        <tbody>
+            <tr>
+                <th>Document Type</th>
+                <td>{{ doc.document }}</td>
+            </tr>
+            <tr>
+                <th>Student Name</th>
+                <td>{{ (doc.firstname or '') ~ ' ' ~ (doc.lastname or '') | trim or '—' }}</td>
+            </tr>
+            <tr>
+                <th>Request ID</th>
+                <td>#{{ doc.id }}</td>
+            </tr>
+            <tr>
+                <th>Date Released</th>
+                <td>
+                    {% if doc.updated_at %}
+                        {{ doc.updated_at.strftime('%B %d, %Y') }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td><span class="badge bg-success px-3 py-2">✓ COMPLETED &amp; RELEASED</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- <div class="row align-items-center g-3">
+        <div class="col-auto">
+            <div id="qrCanvas" style="width:110px;height:110px;"></div>
+        </div>
+        <div class="col">
+            <div class="small text-secondary mb-1">Verification Code</div>
+            <div class="token-box mb-2">{{ doc.verification_token }}</div>
+            <div class="small text-secondary" style="font-size:0.75rem;">
+                Scan the QR code or share this URL to verify the document:
+            </div>
+            <div class="token-box mt-1" id="verifyUrl" style="color:#8fadf8;"></div>
+        </div>
+    </div> -->
+
+</div>
+
+{% else %}
+<div class="verify-card failure text-center">
+
+    <div class="school-header mb-1">St. Clare College Caloocan</div>
+    <div class="school-name mb-4"><i class="fas fa-shield-alt text-info me-2"></i>Document Verification Portal</div>
+
+    <div class="stamp-circle err mx-auto mb-3">
+        <i class="fas fa-times-circle fa-3x text-danger"></i>
+    </div>
+    <h4 class="text-danger fw-bold mb-2">VERIFICATION FAILED</h4>
+    <p class="text-secondary" style="font-size:0.88rem;">
+        The verification code <code class="text-warning">{{ token }}</code> is invalid,
+        has not been released yet, or does not exist in our records.
+    </p>
+    <hr class="border-secondary">
+    <p class="text-secondary small mt-3 mb-0">
+        If you believe this is an error, please contact the St. Clare records office directly.
+    </p>
+
+</div>
+{% endif %}
+
+<div class="text-center mt-3 pb-4">
+    <small class="text-secondary" style="font-size:0.75rem;">
+        &copy; St. Clare College Caloocan — Official Document Request System
+    </small>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+    var qrDiv = document.getElementById('qrCanvas');
+    var urlBox = document.getElementById('verifyUrl');
+    if (!qrDiv || !urlBox) return;
+    var verifyUrl = window.location.href;
+    urlBox.textContent = verifyUrl;
+    new QRCode(qrDiv, {
+        text: verifyUrl,
+        width: 110,
+        height: 110,
+        colorDark: '#2cc5ad',
+        colorLight: '#1f2235'
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,929 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<style>
+
+    canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+ 
+ /* Pinalinaw na Placeholder */
+.search-wrapper input::placeholder {
+    color: rgba(255, 255, 255, 0.6) !important; /* Mas maputi at malinaw */
+    font-size: 13px;
+    font-weight: 400;
+}
+
+/* Para sa Microsoft Edge/Chrome/Safari */
+.search-wrapper input::-webkit-input-placeholder {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Focus state para mas maganda tignan pag click */
+.search-wrapper input:focus {
+    background: var(--bg-card);
+    border-color: var(--accent);
+    color: white;
+    box-shadow: 0 0 0 0.25rem rgba(44, 197, 173, 0.1);
+}
+
+    /* Dashboard Specific Styles */
+    .dashboard-title {
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.5px;
+    }
+
+    /* Stat Cards - Modern Glass Look */
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 24px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+    .stat-card h6 {
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    .stat-card h2 {
+        font-weight: 800;
+        margin-bottom: 0;
+        color: #fff;
+    }
+    
+    /* Icon Colors */
+    .icon-box {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+
+    /* Chart Containers */
+    .chart-container {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 20px;
+        height: 400px;
+    }
+    .chart-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    /* Table Container inside Dashboard */
+    .management-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .card-header-custom {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Search Input Styling */
+    .search-wrapper {
+        position: relative;
+        max-width: 300px;
+        width: 100%;
+    }
+    .search-wrapper input {
+        background: var(--bg-body);
+        border: 1px solid var(--border-color);
+        color: white;
+        padding-left: 40px;
+        border-radius: 8px;
+    }
+    .search-wrapper i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+    }
+
+    .table thead th {
+        background: rgba(255,255,255,0.03);
+        color: var(--accent);
+        font-size: 11px;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+</style>
+
+
+
+<div class="container-fluid">
+
+     {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-item flash-{{ 'success' if category == 'success' else 'danger' }}">
+                    <i class="bi {{ 'bi-check-circle' if category == 'success' else 'bi-exclamation-triangle' }}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Dashboard Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="dashboard-title mb-1">
+                {% if admin_role == 'Record Staff' %}
+                    My Analytics Dashboard
+                {% else %}
+                    Admin Dashboard
+                {% endif %}
+            </h1>
+            <p class="text-muted mb-0">
+                {% if admin_role == 'Record Staff' %}
+                    Overview of requests assigned to you
+                {% else %}
+                    System-wide analytics and request management
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    
+
+    <div id="chart-data" 
+         data-bar-labels='{{ bar_labels | tojson | safe }}'
+         data-bar-counts='{{ bar_counts | tojson | safe }}'
+         data-pie-labels='{{ pie_labels | tojson | safe }}'
+         data-pie-counts='{{ pie_counts | tojson | safe }}'
+         style="display: none;">
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-layers-fill fs-4"></i>
+                </div>
+                <h6>TOTAL REQUESTS</h6>
+                <h2>{{ stats.total }}</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-success bg-opacity-10 text-secondary">
+                    <i class="bi bi-flag-fill fs-4"></i>
+                </div>
+                <h6>COMPLETED</h6>
+                <h2>{{ stats.completed }}</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-success bg-opacity-10 text-danger">
+                    <i class="bi bi-x-circle-fill fs-4"></i>
+                </div>
+                <h6>REJECTED</h6>
+                <h2>{{ stats.rejected }}</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-hourglass-split fs-4"></i>
+                </div>
+                <h6>PENDING</h6>
+                <h2>{{ stats.pending }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-patch-check-fill fs-4"></i>
+                </div>
+                <h6>APPROVED</h6>
+                <h2>{{ stats.verified }}</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-success bg-opacity-10 text-white">
+                    <i class="bi bi-gear-fill fs-4"></i>
+                </div>
+                <h6>PROCESSING</h6>
+                <h2>{{ stats.processing }}</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-truck fs-4"></i>
+                </div>
+                <h6>FOR DELIVERY</h6>
+                <h2>{{ stats.readydelivery }}</h2>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-box-seam-fill fs-4"></i>
+                </div>
+                <h6>FOR PICKUP</h6>
+                <h2>{{ stats.ready }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-7">
+            <div class="chart-container">
+                <h5 class="chart-title">Monthly Request Volume</h5>
+                <div style="height: 300px;">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="chart-container">
+                <h5 class="chart-title">Status Breakdown</h5>
+                <div style="height: 300px;">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if admin_role == 'Record Staff' %}
+    <div class="management-card mb-4">
+        <div class="card-header-custom">
+            <h5 class="mb-0 fw-bold" style="color: var(--accent);">
+                <i class="bi bi-clock-history me-2"></i>Recent Moves
+            </h5>
+            <p class="text-muted mb-0">Latest request updates you handled.</p>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Request ID</th>
+                        <th>Document</th>
+                        <th>Status</th>
+                        <th>Last Move</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if recent_moves %}
+                        {% for move in recent_moves %}
+                        <tr>
+                            <td class="ps-4 fw-bold">{{ move.id }}</td>
+                            <td>{{ move.document }}</td>
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if move.status == 'Pending' %}bg-warning text-dark
+                                    {% elif move.status == 'Accepted' %}bg-success
+                                    {% elif move.status == 'Rejected' %}bg-danger
+                                    {% elif move.status == 'Processing' %}bg-info
+                                    {% else %}bg-secondary{% endif %}" style="font-size: 10px; padding: 5px 12px;">
+                                    {{ move.status }}
+                                </span>
+                            </td>
+                            <td class="text-black small">
+                                {% if move.updated_at %}
+                                    {{ move.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% elif move.timestamp %}
+                                    {{ move.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No recent moves found.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if admin_role == 'Super Admin' and staff_analytics %}
+    <!-- Staff Analytics Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-people-fill fs-4"></i>
+                </div>
+                <h6>TOTAL STAFF</h6>
+                <h2>{{ total_staff }}</h2>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-person-check-fill fs-4"></i>
+                </div>
+                <h6>ACTIVE STAFF</h6>
+                <h2>{{ active_staff }}</h2>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-trophy-fill fs-4"></i>
+                </div>
+                <h6>TOTAL APPROVED</h6>
+                <h2>{{ total_accepted }}</h2>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-graph-up fs-4"></i>
+                </div>
+                <h6>AVG SUCCESS RATE</h6>
+                <h2>{{ "%.1f"|format(avg_success_rate) }}%</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="management-card mb-5">
+        <div class="card-header-custom">
+            <h5 class="mb-0 fw-bold" style="color: var(--accent);">
+                <i class="bi bi-bar-chart-line-fill me-2"></i>Staff Performance Analytics
+            </h5>
+            <div class="d-flex gap-2 align-items-center">
+                <select id="staffFilter" class="form-select form-select-sm" style="background: white; border: 1px solid rgba(244, 240, 240, 0.1); color: black; width: auto;">
+                    <option value="all">All Staff</option>
+                    <option value="active">Active Only</option>
+                    <option value="top">Top Performers</option>
+                </select>
+                <!-- <button onclick="exportStaffReport()" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i>Export Report
+                </button> -->
+                <div class="search-wrapper">
+                   <i class="bi bi-search" style="color: var(--accent);"></i> 
+                   <input type="text" id="staffSearch" class="form-control form-control-sm " 
+                   class="staffsearch" text-black placeholder= "Search staff..." 
+                   style="background: rgba(241, 237, 237, 0.05); border: 1px solid rgba(255,255,255,0.1); color: rgb(9, 9, 9);">
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="staffAnalyticsTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Staff Name</th>
+                        <th>Role</th>
+                        <th class="text-center">Total Requests</th>
+                        <th class="text-center">Accepted</th>
+                        <th class="text-center">Completed</th>
+                        <th class="text-center">Processing</th>
+                        <th class="text-center">Ready</th>
+                        <th class="text-center">Rejected</th>
+                        <th class="text-center">Success Rate</th>
+                        <!-- <th class="text-center">Avg Value</th> -->
+                        <th class="text-center">Last Accepted</th>
+                        <th class="text-center">Last Completed</th>
+                        <th class="text-center">Last Rejected</th>
+                        <th class="text-center">Last Processed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_analytics %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle me-3" style="width: 35px; height: 35px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold;">
+                                    {{ staff.fullname[0].upper() }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ staff.fullname }}</div>
+                                    <small class="text-muted">{{ staff.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if staff.role_access == 'Record Staff' %}bg-success
+                                {% else %}bg-secondary{% endif %}">
+                                {{ staff.role_access }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-bold">{{ staff.total_requests or 0 }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-success">{{ staff.accepted_requests or 0 }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-primary">{{ staff.completed_requests or 0 }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-info">{{ staff.processing_requests or 0 }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-warning text-dark">{{ (staff.ready_pickup or 0) + (staff.ready_delivery or 0) }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-danger">{{ staff.rejected_requests or 0 }}</span>
+                        </td>
+                        <td class="text-center">
+                            {% set total_processed = (staff.accepted_requests or 0) + (staff.completed_requests or 0) + (staff.rejected_requests or 0) %}
+                            {% if total_processed > 0 %}
+                                <span class="fw-bold" style="color: 
+                                    {% if ((staff.accepted_requests or 0) + (staff.completed_requests or 0)) / total_processed * 100 >= 80 %}#2cc5ad;
+                                    {% elif ((staff.accepted_requests or 0) + (staff.completed_requests or 0)) / total_processed * 100 >= 60 %}#f1c40f;
+                                    {% else %}#e74c3c;{% endif %}">
+                                    {{ "%.1f"|format(((staff.accepted_requests or 0) + (staff.completed_requests or 0)) / total_processed * 100) }}%
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <!-- <td class="text-center">
+                            {% if staff.avg_request_value %}
+                                <span class="fw-bold">₱{{ "%.2f"|format(staff.avg_request_value) }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td> -->
+                        <td class="text-center text-black small">
+                            {% if staff.last_accepted %}
+                                {{ staff.last_accepted.strftime('%m/%d %H:%M') }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center text-black small">
+                            {% if staff.last_completed %}
+                                {{ staff.last_completed.strftime('%m/%d %H:%M') }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center text-black small">
+                            {% if staff.last_rejected %}
+                                {{ staff.last_rejected.strftime('%m/%d %H:%M') }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center text-black small">
+                            {% if staff.last_processed %}
+                                {{ staff.last_processed.strftime('%m/%d %H:%M') }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Top Performers Section -->
+        <div class="mt-4 p-3" style="background: rgba(44, 197, 173, 0.05); border-radius: 8px; border: 1px solid rgba(44, 197, 173, 0.2);">
+            <h6 class="fw-bold mb-3" style="color: var(--accent);">
+                <i class="bi bi-star-fill me-2"></i>Top Performers This Month
+            </h6>
+            <div class="row g-3">
+                {% for staff in staff_analytics[:3] %}
+                {% set performance_score = ((staff.accepted_requests or 0) + (staff.completed_requests or 0)) %}
+                {% if performance_score > 0 %}
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center p-2" style="background: var(--bg-card); border-radius: 8px;">
+                        <div class="avatar-circle me-3" style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold;">
+                            {{ staff.fullname[0].upper() }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold small">{{ staff.fullname }}</div>
+                            <div class="text-muted small">{{ performance_score }} successful requests</div>
+                        </div>
+                        <div class="text-success fw-bold">
+                            <i class="bi bi-trophy-fill"></i>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Quick Management Actions -->
+        <div class="mt-3 p-3" style="background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+            <h6 class="fw-bold mb-3" style="color: var(--text-main);">
+                <i class="bi bi-gear-fill me-2"></i>Quick Management Actions
+            </h6>
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <button class="btn btn-sm btn-outline-success w-100" onclick="bulkAction('activate')">
+                        <i class="bi bi-person-check me-1"></i>Activate All
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-sm btn-outline-warning w-100" onclick="bulkAction('notify')">
+                        <i class="bi bi-envelope me-1"></i>Send Reminder
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-sm btn-outline-info w-100" onclick="exportStaffData()">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-sm btn-outline-primary w-100" onclick="showPerformanceTrends()">
+                        <i class="bi bi-graph-up me-1"></i>View Trends
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Management Tools Section for Super Admin -->
+    {% if admin_role == 'Super Admin' %}
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='{{ url_for('admin.admin_manage_accounts') }}'">
+                <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-people-fill fs-4"></i>
+                </div>
+                <h6>MANAGE STAFF</h6>
+                <p class="text-muted small mb-0">Add, edit, or deactivate staff accounts</p>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='{{ url_for('admin.admin_reports') }}'">
+                <div class="icon-box bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-graph-up fs-4"></i>
+                </div>
+                <h6>GENERATE REPORTS</h6>
+                <p class="text-muted small mb-0">Export detailed analytics and reports</p>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="stat-card" style="cursor: pointer;" onclick="showSystemHealth()">
+                <div class="icon-box bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-shield-check fs-4"></i>
+                </div>
+                <h6>SYSTEM HEALTH</h6>
+                <p class="text-muted small mb-0">Check system status and performance</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="management-card mb-5">
+        <div class="card-header-custom">
+            <h5 class="mb-0 fw-bold" style="color: var(--accent);">
+                <i class="bi bi-database-fill me-2"></i>Requests Management Report
+                <button onclick="exportRequestsReport()" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Export Report
+                </button>
+            </h5>
+                <div class="search-wrapper">
+                   <i class="bi bi-search" style="color: var(--accent);"></i> <input type="text" id="tableSearch" class="form-control form-control-sm" 
+                   placeholder="Type Student Name to Search..." 
+                   style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;">
+                </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="requestsTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>Student Name</th>
+                        <th>Document</th>
+                        <th>Status</th>
+                        <th>Assigned Admin</th>
+                        <th>Date</th>
+                        <th>History</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if requests %}
+                        {% for req in requests %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-black">{{ req.id }}</td>
+                            <td>{{ req.student_firstname }} {{ req.student_lastname }}</td>
+                            <td>{{ req.document }}</td>
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if req.status == 'Pending' %}bg-warning text-dark
+                                    {% elif req.status == 'Accepted' %}bg-success
+                                    {% elif req.status == 'Rejected' %}bg-danger
+                                    {% elif req.status == 'Processing' %}bg-info
+                                    {% else %}bg-secondary{% endif %}" style="font-size: 10px; padding: 5px 12px;">
+                                    {{ req.status }}
+                                </span>
+                            </td>
+                            <td class="text-black small">
+                                {% if req.admin_fullname %}
+                                    <span title="{{ req.admin_email }}">{{ req.admin_fullname }}</span>
+                                {% else %}
+                                    <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-black small">
+                                {{ req.timestamp.strftime('%Y-%m-%d') if req.timestamp else 'N/A' }}
+                            </td>
+                            <td class="text-black small">
+                                {% if req.history %}
+                                    {% for item in req.history %}
+                                        <div>{{ item.timestamp.strftime('%Y-%m-%d %H:%M') }} — {{ item.status }}</div>
+                                    {% endfor %}
+                                {% elif req.updated_at %}
+                                    {{ req.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% elif req.timestamp %}
+                                    {{ req.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="pe-4">
+                                <div class="d-flex justify-content-center gap-2">
+                                    
+
+                                    <form action="{{ url_for('admin.overview') }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this?');">
+                                        <input type="hidden" name="request_id" value="{{ req.id }}">
+                                        <input type="hidden" name="action" value="delete_req">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">No requests found.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// 1. Chart Data Loading
+const dataElement = document.getElementById('chart-data');
+const barLabels = JSON.parse(dataElement.getAttribute('data-bar-labels'));
+const barCounts = JSON.parse(dataElement.getAttribute('data-bar-counts'));
+const pieLabels = JSON.parse(dataElement.getAttribute('data-pie-labels'));
+const pieCounts = JSON.parse(dataElement.getAttribute('data-pie-counts'));
+
+// 2. Name-only Real-time Table Search
+document.getElementById('tableSearch').addEventListener('keyup', function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll('#requestsTable tbody tr');
+    
+    rows.forEach(row => {
+        let nameColumn = row.cells[1].textContent.toLowerCase();
+        if (nameColumn.includes(filter)) {
+            row.style.display = ''; 
+        } else {
+            row.style.display = '0'; 
+        }
+    });
+});
+
+// 3. Staff Analytics Search and Filter
+const staffSearchInput = document.getElementById('staffSearch');
+const staffFilterSelect = document.getElementById('staffFilter');
+
+function filterStaffTable() {
+    const searchFilter = staffSearchInput ? staffSearchInput.value.toLowerCase() : '';
+    const typeFilter = staffFilterSelect ? staffFilterSelect.value : 'all';
+    const rows = document.querySelectorAll('#staffAnalyticsTable tbody tr');
+    
+    rows.forEach(row => {
+        const staffName = row.cells[0].textContent.toLowerCase();
+        const staffEmail = row.cells[0].querySelector('small') ? row.cells[0].querySelector('small').textContent.toLowerCase() : '';
+        const totalRequests = parseInt(row.cells[2].textContent) || 0;
+        
+        let showRow = true;
+        
+        // Search filter
+        if (searchFilter && !staffName.includes(searchFilter) && !staffEmail.includes(searchFilter)) {
+            showRow = false;
+        }
+        
+        // Type filter
+        if (typeFilter === 'active' && totalRequests === 0) {
+            showRow = false;
+        } else if (typeFilter === 'top' && totalRequests < 5) { // Show only staff with 5+ requests
+            showRow = false;
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+    });
+}
+
+if (staffSearchInput) {
+    staffSearchInput.addEventListener('keyup', filterStaffTable);
+}
+
+if (staffFilterSelect) {
+    staffFilterSelect.addEventListener('change', filterStaffTable);
+}
+
+
+function exportRequestsReport() {
+    var table = document.getElementById('requestsTable');
+    if (!table) { alert('Requests table not found.'); return; }
+
+    var d = new Date();
+    var ds = d.toLocaleDateString('en-PH', {year:'numeric',month:'long',day:'numeric'});
+    var fname = 'Requests_Report_' + d.toISOString().split('T')[0] + '.xlsx';
+
+    var headers = Array.from(table.querySelectorAll('thead th')).slice(0,-1)
+        .map(function(th){ return th.textContent.trim(); });
+
+    var rows = Array.from(table.querySelectorAll('tbody tr'))
+        .filter(function(r){ return r.style.display !== 'none' && r.cells.length > 1; })
+        .map(function(row){
+            return Array.from(row.querySelectorAll('td')).slice(0,-1)
+                .map(function(td){ return td.textContent.replace(/\s+/g,' ').trim(); });
+        });
+
+    var data = [
+        ['St. Clare College — Requests Management Report'],
+        ['Generated: ' + ds],
+        [],
+        headers
+    ].concat(rows);
+
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = headers.map(function(h){ return {wch: Math.max(h.length + 2, 15)}; });
+    XLSX.utils.book_append_sheet(wb, ws, 'Requests');
+    XLSX.writeFile(wb, fname);
+}
+
+// 4. Export Staff Analytics
+function exportStaffReport() {
+    var table = document.getElementById('staffAnalyticsTable');
+    if (!table) { alert('Staff analytics table not found.'); return; }
+
+    var d = new Date();
+    var ds = d.toLocaleDateString('en-PH', {year:'numeric',month:'long',day:'numeric'});
+    var fname = 'Staff_Analytics_' + d.toISOString().split('T')[0] + '.xlsx';
+
+    var headers = Array.from(table.querySelectorAll('thead th'))
+        .map(function(th){ return th.textContent.trim(); });
+
+    var rows = Array.from(table.querySelectorAll('tbody tr'))
+        .filter(function(r){ return r.style.display !== 'none' && r.cells.length > 1; })
+        .map(function(row){
+            return Array.from(row.querySelectorAll('td')).map(function(td, i){
+                if (i === 0) {
+                    var name  = td.querySelector('.fw-bold') ? td.querySelector('.fw-bold').textContent.trim() : td.textContent.replace(/\s+/g,' ').trim();
+                    var email = td.querySelector('small') ? td.querySelector('small').textContent.trim() : '';
+                    return name + (email ? ' (' + email + ')' : '');
+                }
+                return td.textContent.replace(/\s+/g,' ').trim();
+            });
+        });
+
+    var data = [
+        ['St. Clare College — Staff Performance Analytics'],
+        ['Generated: ' + ds],
+        [],
+        headers
+    ].concat(rows);
+
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = headers.map(function(){ return {wch: 18}; });
+    XLSX.utils.book_append_sheet(wb, ws, 'Staff Analytics');
+    XLSX.writeFile(wb, fname);
+}
+
+// 5. System Health Check Function
+function showSystemHealth() {
+    // Simple system health check - in a real app, this would call an API
+    const healthData = {
+        'Database': 'Connected',
+        'Email Service': 'Operational', 
+        'File Storage': 'Available',
+        'Server Load': 'Normal',
+        'Last Backup': new Date().toLocaleDateString()
+    };
+    
+    let healthHtml = '<div class="alert alert-info"><h6>System Health Status</h6><ul class="mb-0">';
+    for (const [component, status] of Object.entries(healthData)) {
+        healthHtml += `<li><strong>${component}:</strong> ${status}</li>`;
+    }
+    healthHtml += '</ul></div>';
+    
+    // Create a temporary alert
+    const alertDiv = document.createElement('div');
+    alertDiv.innerHTML = healthHtml;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.maxWidth = '400px';
+    
+    document.body.appendChild(alertDiv);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        document.body.removeChild(alertDiv);
+    }, 5000);
+}
+
+// 6. Bulk Actions
+function bulkAction(action) {
+    if (action === 'activate') {
+        alert('Bulk activation feature would activate all inactive staff accounts. This requires backend implementation.');
+    } else if (action === 'notify') {
+        alert('Bulk notification feature would send performance reminders to underperforming staff. This requires backend implementation.');
+    }
+}
+
+// 7. Export Staff Data
+function exportStaffData() {
+    var table = document.getElementById('staffAnalyticsTable');
+    if (!table) return;
+
+    var d = new Date();
+    var ds = d.toLocaleDateString('en-PH', {year:'numeric',month:'long',day:'numeric'});
+    var fname = 'Staff_Data_' + d.toISOString().split('T')[0] + '.xlsx';
+
+    var headers = Array.from(table.querySelectorAll('thead th'))
+        .map(function(th){ return th.textContent.trim(); });
+
+    var rows = Array.from(table.querySelectorAll('tbody tr'))
+        .filter(function(r){ return r.style.display !== 'none' && r.cells.length > 1; })
+        .map(function(row){
+            return Array.from(row.querySelectorAll('td')).map(function(td, i){
+                if (i === 0) {
+                    var name  = td.querySelector('.fw-bold') ? td.querySelector('.fw-bold').textContent.trim() : td.textContent.replace(/\s+/g,' ').trim();
+                    var email = td.querySelector('small') ? td.querySelector('small').textContent.trim() : '';
+                    return name + (email ? ' (' + email + ')' : '');
+                }
+                var text = td.textContent.replace(/\s+/g,' ').trim();
+                return text === '-' ? '' : text;
+            });
+        });
+
+    var data = [
+        ['St. Clare College — Staff Data Export'],
+        ['Generated: ' + ds],
+        [],
+        headers
+    ].concat(rows);
+
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = headers.map(function(){ return {wch: 18}; });
+    XLSX.utils.book_append_sheet(wb, ws, 'Staff Data');
+    XLSX.writeFile(wb, fname);
+}
+
+// 8. Show Performance Trends
+function showPerformanceTrends() {
+    alert('Performance trends feature would show charts of staff performance over time. This requires additional backend data and chart implementation.');
+}
+</script>
+<script src="{{ url_for('static', filename='admin_charts.js') }}"></script>
+
+{% endblock %}

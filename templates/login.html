@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+    <title>ClareFiles | Document Request System</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/scc.jpg') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/scc.jpg') }}">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='login_style.css') }}">
+</head>
+<body>
+
+    <div class="bg-wrapper">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">ClareFiles</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="homeDropdown" role="button" data-bs-toggle="dropdown">
+                            Home
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/login"><i class="fas fa-sign-in-alt me-2"></i>Login Now</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#service">Services</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                    <li class="nav-item ms-lg-3">
+                        <a href="/login" class="btn btn-info text-white px-4 rounded-pill shadow-sm">Get Started</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+  
+    <div class="container hero-section">   
+        <div class="row align-items-start g-5">
+            <div class="col-lg-7 left-content-padding"> 
+                <h2 class="main-heading">Request Document</h2>
+                <p class="hero-text">
+                    We would like to remind all students, Alumni, and stakeholders that all request for official school Documents must be processed only through the Official Document Request System of St. Clare College.
+                </p>
+                <div class="d-flex gap-3">
+                    <a href="#features" class="btn btn-outline-dark rounded-pill px-4">Learn More</a>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-5 d-flex flex-column justify-content-center form-section shadow-lg p-5 bg-white rounded-4">
+
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+               <img src="{{ url_for('static', filename='images/logo_school.png') }}" 
+                    alt="Logo" class="img-fluid d-block mx-auto mb-4" style="max-width: 100px;">
+            
+                <h3 class="h5 fw-bold mb-3 text-center">St. Clare College of Caloocan</h3>
+    
+                {% if error %}
+                    <div class="alert alert-danger" role="alert">{{ error }}</div>
+                {% endif %}
+    
+                <form action="/login" method="post">
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-bold">Email Address:</label>
+                        <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="name.scc@gmail.com" required>
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-info btn-lg text-white shadow">Verify Identity</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <section id="features" class="py-5">
+        <div class="container text-center py-5">
+            <h2 class="fw-bold mb-5">Why Use ClareFiles?</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm p-4 rounded-4">
+                        <i class="fas fa-clock fa-3x text-info mb-3"></i>
+                        <h4 class="fw-bold">24/7 Access</h4>
+                        <p class="text-muted">Submit your requests anytime of the day, even during weekends or holidays.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm p-4 rounded-4">
+                        <i class="fas fa-file-invoice fa-3x text-info mb-3"></i>
+                        <h4 class="fw-bold">Real-time Tracking</h4>
+                        <p class="text-muted">Monitor the status of your documents from 'Pending' to 'Ready for Pickup'.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm p-4 rounded-4">
+                        <i class="fas fa-check-circle fa-3x text-info mb-3"></i>
+                        <h4 class="fw-bold">Verified Records</h4>
+                        <p class="text-muted">Directly linked to the Registrar's database for accurate and official copies.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h2 class="fw-bold mb-4">Bridging Technology and Education</h2>
+                    <p class="lead">ClareFiles is designed to eliminate long queues and manual paperwork.</p>
+                    <p class="text-muted">Our mission is to provide St. Clare College students and alumni with a seamless, digital-first experience when handling academic records.</p>
+                </div>
+                <div class="col-md-6">
+                    <div class="bg-info rounded-5 p-5 text-white shadow-lg text-center">
+                        <i class="fas fa-university fa-5x"></i>
+                        <h3 class="mt-3">SCC Registrar</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="service" class="py-5 bg-light text-center">
+        <div class="container py-5">
+            <h2 class="fw-bold mb-5">Available Documents</h2>
+            <div class="row g-3">
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">Transcript of Records</div></div>
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">Honorable Dismissal</div></div>
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">Good Moral Cert.</div></div>
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">Diploma</div></div>
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">Transcript of Records</div></div>
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">FORM 138</div></div>
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">FORM 137</div></div>
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">Certificate of Grades</div></div>
+                <div class="col-6 col-md-3"><div class="p-3 bg-white shadow-sm rounded">Cetificate of True Copy Document/s</div></div>
+
+
+            </div>
+        </div>
+    </section>
+
+    <footer id="contact" class="py-5 bg-dark text-white">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-4">Get In Touch</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-4">
+                    <p><i class="fas fa-map-marker-alt text-info me-2"></i> 175 North Caloocan, Metro Manila</p>
+                    <p><i class="fas fa-phone text-info me-2"></i> (02) 8123-4567</p>
+                    <p><i class="fas fa-envelope text-info me-2"></i> registrar@stclare.edu.ph</p>
+                </div>
+            </div>
+            <hr class="my-4 bg-secondary">
+            <p class="small text-secondary mb-0">&copy; 2026 St. Clare College of Caloocan. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

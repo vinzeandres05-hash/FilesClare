@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .payment-card {
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid #f0f0f0 !important;
+    }
+    .payment-card:hover, .payment-card.selected {
+        border-color: #dc3545 !important;
+        background-color: #fff5f5;
+    }
+    .payment-card.selected::after {
+        content: '✓';
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .qr-box img {
+        width: 180px;
+        height: 180px;
+        border: 1px solid #ddd;
+        padding: 5px;
+        border-radius: 8px;
+    }
+    .ref-number {
+        letter-spacing: 2px;
+        font-family: monospace;
+        background: #f8f9fa;
+        padding: 5px 10px;
+        border: 1px dashed #ccc;
+    }
+</style>
+
+<div class="content-card">
+    <div class="content-header d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-credit-card me-2"></i>Payment Summary</h2>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Req. ID</th>
+                    <th>Document</th>
+                    <th>Final Price</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bill in bills %}
+                <tr>
+                    <td>#{{ bill.id }}</td>
+                    <td>{{ bill.document }}</td>
+                    <td>₱ {{ "%.2f"|format(bill.final_price) }}</td>
+                    
+                    <td>
+                        {% if bill.payment_status == 'PAID' %}
+                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> VERIFIED</span>
+                        {% elif bill.payment_status == 'Pending Verification' %}
+                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> PENDING VERIFICATION</span>
+                        {% elif bill.payment_status == 'REJECTED' %}
+                            <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i> RECEIPT REJECTED</span>
+                        {% else %}
+                            <span class="badge bg-secondary">UNPAID</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if bill.payment_status == 'PAID' %}
+                            <span class="text-success fw-bold small"><i class="fas fa-check"></i> Payment Complete</span>
+                        {% elif bill.payment_status == 'Pending Verification' %}
+                            <button class="btn btn-sm btn-secondary" disabled>Checking Proof...</button>
+                        {% else %}
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#paymentModal" 
+                                    data-reqid="{{ bill.id }}" 
+                                    data-price="{{ '%.2f'|format(bill.final_price) }}">
+                                {% if bill.payment_status == 'REJECTED' %}
+                                    <i class="fas fa-redo me-1"></i> Re-select Method
+                                {% else %}
+                                    Select Payment Methods
+                                {% endif %}
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{{ url_for('user.dashboard') }}" class="btn btn-info w-10  mt-2 small ">
+         <i class="fa-solid fa-house me-2"></i> Back to Home
+    </a>
+
+</div>
+
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            
+            <div id="step-1">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Select Payment Method</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-6 text-center">
+                            <div class="payment-card border rounded p-3 position-relative" onclick="setPayment('GCash', this)">
+                                <img src="{{ url_for('static', filename='images/gcash.png') }}" height="100">
+                                <p class="small mb-0 mt-2">GCash</p>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="payment-card border rounded p-3 position-relative" onclick="setPayment('Maya', this)">
+                                <img src="{{ url_for('static', filename='images/maya.jpg') }}" height="100">
+                                <p class="small mb-0 mt-2">Maya</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button id="btnProceed" class="btn btn-danger w-100 py-2 fw-bold" onclick="goToStep2()" disabled>Proceed</button>
+                </div>
+            </div>
+
+            <div id="step-2" style="display: none;">
+                <div class="modal-header border-0 pb-0">
+                    <button class="btn btn-sm text-muted" onclick="goToStep1()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center pt-0">
+                    <p class="mb-1 text-muted">Scan to pay via <span id="method-name" class="fw-bold"></span></p>
+                    <div class="qr-box my-3">
+                        <img id="qr-img" src="{{ url_for('static', filename='images/default_qr.png') }}" alt="QR Code">
+                    </div>
+                    <h3 class="fw-bold text-danger mb-1" id="final-amount">₱ 0.00</h3>
+                    <p class="small text-muted mb-3">Reference: <span id="ref-id" class="ref-number fw-bold"></span></p>
+                    
+                    <div class="alert alert-info py-2 text-start" style="font-size: 0.8rem;">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        <strong>Note:</strong> Include the Reference ID in the GCash/Maya message field for faster verification.
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <a href="{{ url_for('upload.upload_proof') }}" class="btn btn-danger w-100 py-2 fw-bold">I Have Paid, Upload Receipt</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedType = "";
+    let reqPrice = "";
+    let reqId = "";
+
+    function setPayment(type, el) {
+        document.querySelectorAll('.payment-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedType = type;
+        document.getElementById('btnProceed').disabled = false;
+    }
+
+    function goToStep2() {
+        document.getElementById('step-1').style.display = 'none';
+        document.getElementById('step-2').style.display = 'block';
+        document.getElementById('method-name').innerText = selectedType;
+        document.getElementById('final-amount').innerText = "₱ " + reqPrice;
+        document.getElementById('ref-id').innerText = "REQ-" + reqId;
+        
+        const qr = document.getElementById('qr-img');
+        if(selectedType === 'GCash') {
+            qr.src = "{{ url_for('static', filename='images/sccqr.jpg') }}";
+        } else {
+            qr.src = "{{ url_for('static', filename='images/mayaqr.jpg') }}"; 
+        }
+    }
+
+    function goToStep1() {
+        document.getElementById('step-1').style.display = 'block';
+        document.getElementById('step-2').style.display = 'none';
+    }
+
+    const modal = document.getElementById('paymentModal');
+    modal.addEventListener('show.bs.modal', function (event) {
+        const btn = event.relatedTarget;
+        reqId = btn.getAttribute('data-reqid');
+        reqPrice = btn.getAttribute('data-price');
+        goToStep1();
+    });
+</script>
+{% endblock %}

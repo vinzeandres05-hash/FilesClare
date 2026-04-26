@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-card">
+
+    <div class="content-header d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-folder-plus me-2"></i>New Document Request Form</h2>
+        <a href="{{ url_for('user.history') }}" class="btn btn-info">
+            <i class="fas fa-list-alt me-1"></i> My History & Status
+        </a>
+    </div>
+
+    
+    {% if error %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> {{ error }}
+        </div>
+    {% endif %}
+    
+    <p class="text-secondary mb-4">Please provide accurate information for processing.</p>
+
+    <form action="{{ url_for('user.new_request') }}" method="post" onsubmit="return confirm('Please double check your information before submitting this request. Are you sure you want to proceed?');">
+        
+        <div class="mb-3">
+            <label for="document_type" class="form-label required">Type of Document Request</label>
+            <select id="document_type" name="document_type" class="form-select" required>
+                <option value="">-- Select Document --</option>
+                {% for doc in document_types %}
+                    <option value="{{ doc.doc_name }}">{{ doc.doc_name }} (Fee: ₱{{ "%.2f"|format(doc.fee) }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="year_entry" class="form-label required">School Year of Entry (E.g., 2018)</label>
+                <input type="number" id="year_entry" name="year_entry" class="form-control" placeholder="E.g., 2018" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="last_school" class="form-label">School Year of Graduation (If Applicable)</label>
+                <input type="number" id="last_school" name="last_school" class="form-control" placeholder="E.g., 2022">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="purpose" class="form-label required">Purpose of Request (Detailed)</label>
+            <textarea id="purpose" name="purpose" rows="4" class="form-control" required placeholder="E.g., For application in ST. CLARE, Second Semester 2024-2025."></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="delivery_method" class="form-label">Method of Obtaining the Document:</label>
+            <select id="delivery_method" name="delivery_method" class="form-select" required>
+                {% for option in delivery_options %}
+                    <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+            </select>
+            <div id="delivery_address_container" class="mt-3" style="display: none;">
+                    <textarea id="delivery_address" name="delivery_address" class="form-control" placeholder="Delivery Address"></textarea>
+            </div>
+
+                    <script>
+                    document.getElementById('delivery_method').addEventListener('change', function() {
+                    const container = document.getElementById('delivery_address_container');
+                    container.style.display = this.value === 'Door-to-Door Delivery / Add Another Fee' ? 'block' : 'none';
+                    });
+                    </script>
+        </div>
+
+        <button type="submit" class="btn btn-info btn-lg mt-3">
+            <i class="fas fa-paper-plane me-2"></i> Submit Request
+        </button>
+    </form>
+
+    <a href="{{ url_for('user.dashboard') }}" class="btn btn-info w-10  mt-2 small ">
+         <i class="fa-solid fa-house me-2"></i> Back to Home
+    </a>
+    
+</div>
+{% endblock %}

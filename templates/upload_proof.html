@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .upload-card {
+        border-radius: 20px;
+        overflow: hidden;
+        border: none;
+    }
+    .upload-zone {
+        border: 2px dashed #dee2e6;
+        border-radius: 15px;
+        padding: 30px;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+    .upload-zone:hover {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+    }
+    .form-control-lg, .form-select-lg {
+        border-radius: 10px;
+        font-size: 1rem;
+    }
+    .btn-submit {
+        border-radius: 12px;
+        padding: 12px;
+        font-weight: bold;
+        transition: transform 0.2s;
+    }
+    .btn-submit:hover {
+        transform: translateY(-2px);
+    }
+    .required::after {
+        content: " *";
+        color: #dc3545;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        
+        
+        <div class="card upload-card shadow-sm mt-2">
+            <div class="card-body p-4 p-md-5">
+
+                 <div class="text-center mb-4">
+            <h2 class="fw-bold"><i class="fas fa-file-invoice-dollar text-info me-2"></i>Payment Verification</h2>
+            <p class="text-muted">Submit your receipt for admin approval</p>
+        </div>
+
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form action="{{ url_for('upload.upload_proof') }}" method="post" enctype="multipart/form-data">
+                    <div class="row g-4">
+                        
+<div class="mb-3">
+    <label for="req_id" class="form-label fw-bold small required">Request ID Number</label>
+    <input type="number" 
+           name="req_id" 
+           id="req_id" 
+           class="form-control" 
+           placeholder="e.g. 105" 
+           required>
+    <div class="form-text text-muted">
+        Input the Request ID found on your payment summary page.
+    </div>
+</div>
+                        
+                        <div class="col-12">
+                            <label for="amount" class="form-label fw-bold small required">Actual Amount Paid (₱)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">₱</span>
+                                <input type="number" step="0.01" class="form-control form-control-lg border-start-0 shadow-sm" 
+                                       id="amount" name="amount" required placeholder="0.00"
+                                       value="{{ request.args.get('amount', '') }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="ref_no" class="form-label fw-bold small required">GCash/Maya Reference No.</label>
+                            <input type="text" class="form-control form-control-lg shadow-sm" id="ref_no" name="ref_no" 
+                                   required placeholder="Enter the 13-digit reference number">
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <label class="form-label fw-bold small required">Upload Receipt Screenshot</label>
+                            <div class="upload-zone text-center shadow-sm" onclick="document.getElementById('proof_file').click()">
+                                <i class="fas fa-camera fa-2x text-muted mb-2"></i>
+                                <p class="mb-0 small text-muted">Tap to upload or drag image here</p>
+                                <input type="file" class="d-none" id="proof_file" name="proof_file" 
+                                       accept="image/jpeg, image/png" required onchange="previewFile()">
+                                <div id="file-name" class="mt-2 small fw-bold text-danger"></div>
+                            </div>
+                            <div class="form-text text-center mt-2">Accepted: JPG, PNG (Max 5MB)</div>
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <button type="submit" class="btn btn-info btn-lg w-100 btn-submit shadow">
+                                <i class="fas fa-check-circle me-2"></i> Submit Payment Proof
+                            </button>
+                            <a href="{{ url_for('user.payment') }}" class="btn btn-info w-100 text-muted mt-2 text-decoration-none small">
+                                Cancel and Go Back
+                            </a>
+
+                             
+                              <a href="{{ url_for('user.dashboard') }}" class="btn btn-info w-100 text-muted mt-2 text-decoration-none small ">
+                                  <i class="fa-solid fa-house me-2"></i> Back to Home
+                              </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+       <div class="text-center mt-4">
+            <p class="text-muted small">
+                <i class="fas fa-shield-alt me-1 text-danger"></i> 
+                <strong>Note:</strong> Your status will remain <span class="badge bg-warning text-dark px-2">UNPAID</span> until the admin verifies your uploaded receipt.
+            </p>
+        </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple script para ipakita yung name ng file na pinili
+    function previewFile() {
+        const file = document.getElementById('proof_file').files[0];
+        const display = document.getElementById('file-name');
+        if (file) {
+            display.innerText = "Selected: " + file.name;
+        }
+    }
+</script>
+{% endblock %}

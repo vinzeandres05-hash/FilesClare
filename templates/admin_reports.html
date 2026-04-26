@@ -1,0 +1,321 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<style>
+    /* Reports Specific Styling */
+    .report-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        transition: transform 0.3s ease;
+    }
+    .report-card:hover {
+        transform: translateY(-5px);
+    }
+
+    /* Icon Box for Cards */
+    .icon-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    /* Table & Health Section */
+    .section-title {
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .custom-table {
+        background: transparent;
+        color: var(--text-main);
+    }
+    .custom-table thead th {
+        color: var(--accent);
+        font-size: 11px;
+        border-bottom: 1px solid var(--border-color);
+        background: rgba(255,255,255,0.02);
+    }
+    .custom-table td {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding: 12px 8px;
+    }
+
+    /* Progress Bar Styles */
+    .progress {
+        background-color: rgba(255,255,255,0.05);
+        border-radius: 10px;
+        height: 8px !important;
+    }
+
+    /* Dagdag na styling para mawala ang default white hover at background */
+    .table {
+        --bs-table-bg: transparent !important;
+        --bs-table-hover-bg: rgba(255, 255, 255, 0.02) !important;
+        color: white !important;
+    }
+    
+    .table td {
+        background-color: transparent !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        vertical-align: middle;
+        padding: 15px 10px !important;
+    }
+
+    /* Print media adjustment */
+    @media print {
+        .btn-print, .sidebar, .nav-header { display: none !important; }
+        .report-card { border: 1px solid #ccc !important; color: black !important; }
+        body { background: white !important; }
+    }
+</style>
+
+<div id="chart-data" 
+     data-bar-labels='{{ bar_labels | tojson | safe }}'
+     data-bar-counts='{{ bar_counts | tojson | safe }}'
+     data-pie-labels='{{ pie_labels | tojson | safe }}'
+     data-pie-counts='{{ pie_counts | tojson | safe }}'
+     data-revenue='{{ "{:,.2f}".format(reports.revenue) }}'
+     data-students='{{ reports.students }}'
+     data-total-reqs='{{ reports.requests_total }}'
+     data-pending-reqs='{{ reports.requests_pending }}'
+     data-messages='{{ reports.messages }}'
+     data-approved-payments='{{ reports.approved_payments }}'
+     style="display: none;">
+</div>
+
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-1 fw-bold text-black">System Reports & Analytics</h2>
+            <p class="text-muted small mb-0">Real-time overview of system performance and transactions.</p>
+        </div>
+        <button class="btn btn-primary shadow-sm px-4" onclick="exportSystemReport()">
+            <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Report
+        </button>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="report-card card h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white small fw-bold text-uppercase">Total Revenue</div>
+                        <div class="h4 mb-0 fw-bold mt-1" style="color: var(--accent);">₱{{ "{:,.2f}".format(reports.revenue) }}</div>
+                    </div>
+                    <div class="icon-circle bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-card card h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white small fw-bold text-uppercase">Registered Students</div>
+                        <div class="h4 mb-0 fw-bold mt-1 text-white">{{ reports.students }}</div>
+                    </div>
+                    <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-card card h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white small fw-bold text-uppercase">Total Requests</div>
+                        <div class="h4 mb-0 fw-bold mt-1 text-white">{{ reports.requests_total }}</div>
+                        <div class="small mt-1 text-warning fw-bold">{{ reports.requests_pending }} Pending</div>
+                    </div>
+                    <div class="icon-circle bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="report-card card h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white small fw-bold text-uppercase">Inbox Messages</div>
+                        <div class="h4 mb-0 fw-bold mt-1 text-white">{{ reports.messages }}</div>
+                    </div>
+                    <div class="icon-circle bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-chat-dots-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-7">
+            <div class="report-card card p-4" style="height: 400px;">
+                <h6 class="section-title mb-4 text-center">Request Volume (Monthly Trend)</h6>
+                <div style="flex-grow: 1; position: relative;">
+                    <canvas id="barChartReport"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="report-card card p-4" style="height: 400px;">
+                <h6 class="section-title mb-4 text-center">Request Distribution</h6>
+                <div style="flex-grow: 1; position: relative;">
+                    <canvas id="pieChartReport"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="report-card card h-100 overflow-hidden">
+                <div class="card-header bg-transparent border-bottom border-secondary py-3">
+                    <h6 class="section-title mb-0">Detailed Transaction Summary</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table custom-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Category</th>
+                                    <th>Total Count</th>
+                                    <th>Status</th>
+                                    <th class="pe-4 text-end">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="ps-4 fw-bold text-white">Document Requests</td>
+                                    <td class="text-white">{{ reports.requests_total }}</td>
+                                    <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary">Active Requests</span></td>
+                                    <td class="pe-4 text-end text-white small"><i class="bi bi-file-earmark-text me-1"></i>Updated Real-time</td>
+                                </tr>
+                                <tr class="align-middle" style="background: transparent; border-bottom: none;">
+                                    <td class="ps-4 fw-bold text-white">Verified Payments</td>
+                                    <td class="text-white">{{ reports.approved_payments }}</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success border border-success">Verified</span></td>
+                                    <td class="pe-4 text-end text-white small"><i class="bi bi-shield-check me-1"></i>Payment Proof Matched</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="report-card card h-100">
+                <div class="card-header bg-transparent border-bottom border-secondary py-3">
+                    <h6 class="section-title mb-0">System Infrastructure Health</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-white">Database Latency</span>
+                            <span class="small text-success fw-bold">Online / 100%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-white">Server CPU Usage</span>
+                            <span class="small text-info fw-bold">Optimal / 100%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded bg-opacity-10 bg-white border border-secondary">
+                        <p class="small text-white mb-0"><i class="bi bi-info-circle me-1"></i> System is performing optimally. No errors reported in the last 24 hours.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const dataElement = document.getElementById('chart-data');
+    const barLabels = JSON.parse(dataElement.getAttribute('data-bar-labels'));
+    const barCounts = JSON.parse(dataElement.getAttribute('data-bar-counts'));
+    const pieLabels = JSON.parse(dataElement.getAttribute('data-pie-labels'));
+    const pieCounts = JSON.parse(dataElement.getAttribute('data-pie-counts'));
+</script>
+<script src="{{ url_for('static', filename='admin_reports_charts.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+
+function exportSystemReport() {
+    var cd = document.getElementById('chart-data');
+    var barLabels = JSON.parse(cd.getAttribute('data-bar-labels') || '[]');
+    var barCounts = JSON.parse(cd.getAttribute('data-bar-counts') || '[]');
+    var pieLabels = JSON.parse(cd.getAttribute('data-pie-labels') || '[]');
+    var pieCounts = JSON.parse(cd.getAttribute('data-pie-counts') || '[]');
+    var revenue     = cd.getAttribute('data-revenue') || '0';
+    var students    = cd.getAttribute('data-students') || '0';
+    var totalReqs   = cd.getAttribute('data-total-reqs') || '0';
+    var pendingReqs = cd.getAttribute('data-pending-reqs') || '0';
+    var messages    = cd.getAttribute('data-messages') || '0';
+    var approvedPay = cd.getAttribute('data-approved-payments') || '0';
+
+    var d = new Date();
+    var ds = d.toLocaleDateString('en-PH', {year:'numeric',month:'long',day:'numeric'});
+    var fname = 'System_Report_' + d.toISOString().split('T')[0] + '.xlsx';
+
+    var wb = XLSX.utils.book_new();
+
+    // Sheet 1 — Summary
+    var ws1 = XLSX.utils.aoa_to_sheet([
+        ['St. Clare College — System Analytics Report'],
+        ['Generated: ' + ds],
+        [],
+        ['Metric', 'Value'],
+        ['Total Revenue', '₱' + revenue],
+        ['Registered Students', Number(students)],
+        ['Total Requests', Number(totalReqs)],
+        ['Pending Requests', Number(pendingReqs)],
+        ['Verified Payments', Number(approvedPay)],
+        ['Inbox Messages', Number(messages)]
+    ]);
+    ws1['!cols'] = [{wch:30},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+
+    // Sheet 2 — Status Breakdown
+    var totalPie = pieCounts.reduce(function(a,b){return a+b;},0);
+    var statusRows = [['St. Clare College — Status Breakdown'],[], ['Status','Count','% of Total']];
+    pieLabels.forEach(function(s,i){
+        var pct = totalPie > 0 ? ((pieCounts[i]/totalPie)*100).toFixed(1)+'%' : '0.0%';
+        statusRows.push([s, pieCounts[i], pct]);
+    });
+    var ws2 = XLSX.utils.aoa_to_sheet(statusRows);
+    ws2['!cols'] = [{wch:25},{wch:10},{wch:15}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Status Breakdown');
+
+    // Sheet 3 — Monthly Volume
+    var monthRows = [['St. Clare College — Monthly Request Volume'],[], ['Month','Requests Submitted']];
+    barLabels.forEach(function(m,i){ monthRows.push([m, barCounts[i]]); });
+    var ws3 = XLSX.utils.aoa_to_sheet(monthRows);
+    ws3['!cols'] = [{wch:15},{wch:22}];
+    XLSX.utils.book_append_sheet(wb, ws3, 'Monthly Volume');
+
+    XLSX.writeFile(wb, fname);
+}
+</script>
+{% endblock %}

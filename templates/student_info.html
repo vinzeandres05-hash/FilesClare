@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-card">
+
+    <h2><i class="fas fa-user-cog me-2"></i>Edit Profile</h2>
+    
+    {% if message %}
+        <div class="alert alert-success" role="alert">
+            <i class="fas fa-check-circle me-2"></i> {{ message }}
+        </div>
+    {% endif %}
+    
+
+
+    <p class="text-secondary mb-4">Please provide **accurate information** to process your document requests.</p>
+
+    <form action="{{ url_for('user.student_info') }}" method="post">
+        
+        <div class="row g-3">
+            
+            <div class="col-md-6">
+                
+                <div class="mb-3">
+                    <label for="lastname" class="form-label required">Last Name</label>
+                    <input type="text" id="lastname" name="lastname" class="form-control" value="{{ student.lastname or '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="firstname" class="form-label required">First Name</label>
+                    <input type="text" id="firstname" name="firstname" class="form-control" value="{{ student.firstname or '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="middlename" class="form-label">Middle Name</label>
+                    <input type="text" id="middlename" name="middlename" class="form-control" value="{{ student.middlename or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label for="suffix" class="form-label">Suffix (e.g., Jr., III)</label>
+                    <input type="text" id="suffix" name="suffix" class="form-control" value="{{ student.suffix or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label for="gender" class="form-label required">Gender</label>
+                    <select id="gender" name="gender" class="form-select" required>
+                        <option value="">-- Select Gender --</option>
+                        <option value="Male" {% if student.gender == 'Male' %}selected{% endif %}>Male</option>
+                        <option value="Female" {% if student.gender == 'Female' %}selected{% endif %}>Female</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="age" class="form-label required">Age</label>
+                    <input type="number" id="age" name="age" class="form-control" value="{{ student.age or '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="contact" class="form-label required">Contact Number</label>
+                    <input type="text" id="contact" name="contact" class="form-control" value="{{ student.contact or '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="birthdate" class="form-label required">Birthdate</label>
+                    <input type="date" id="birthdate" name="birthdate" class="form-control" value="{{ student.birthdate if student.birthdate else '' }}" required>
+                </div>
+
+            </div>
+            
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="enrollment_status" class="form-label required">Enrollment Status</label>
+                    <select id="enrollment_status" name="enrollment_status" class="form-select" required>
+                        <option value="">-- Select Status --</option>
+                        <option value="Graduate" {% if student.enrollment_status == 'Graduate' %}selected{% endif %}>Graduate</option>
+                        <option value="Currently Enrolled" {% if student.enrollment_status == 'Currently Enrolled' %}selected{% endif %}>Currently Enrolled</option>
+                        <option value="Transferee" {% if student.enrollment_status == 'Transferee' %}selected{% endif %}>Transferee</option>
+                        <option value="Others" {% if student.enrollment_status == 'Others' %}selected{% endif %}>Others</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="education_level" class="form-label required">Level</label>
+                    <select id="education_level" name="education_level" class="form-select" required>
+                        <option value="">-- Select Education Level --</option>
+                        <option value="Elementary" {% if student.education_level == 'Elementary' %}selected{% endif %}>Elementary</option>
+                        <option value="High School" {% if student.education_level == 'High School' %}selected{% endif %}>High School</option>
+                        <option value="Senior High School" {% if student.education_level == 'Senior High School' %}selected{% endif %}>Senior High School</option>
+                        <option value="College" {% if student.education_level == 'College' %}selected{% endif %}>College</option>
+                    </select>
+                </div>
+
+                <div id="track_wrapper" class="mb-3" style="display:none;">
+                    <label for="track" class="form-label">Track</label>
+                    <select id="track" name="track" class="form-select" required>
+                        <option value="">-- Select Track --</option>
+                        <option value="STEM" {% if student.track == 'STEM' %}selected{% endif %}>STEM</option>
+                        <option value="ABM" {% if student.track == 'ABM' %}selected{% endif %}>ABM</option>
+                        <option value="GAS" {% if student.track == 'GAS' %}selected{% endif %}>GAS</option>
+                        <option value="TVL" {% if student.track == 'TVL' %}selected{% endif %}>TVL</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="course_grade" class="form-label required">Course/Grade</label>
+                    <select id="course_grade" name="course_grade" class="form-select" required>
+                        <option value="">-- Select Course/Grade --</option>
+                        <option data-level="Elementary" value="Grade 1" {% if student.course_grade == 'Grade 1' %}selected{% endif %}>Grade 1</option>
+                        <option data-level="Elementary" value="Grade 2" {% if student.course_grade == 'Grade 2' %}selected{% endif %}>Grade 2</option>
+                        <option data-level="Elementary" value="Grade 3" {% if student.course_grade == 'Grade 3' %}selected{% endif %}>Grade 3</option>
+                        <option data-level="Elementary" value="Grade 4" {% if student.course_grade == 'Grade 4' %}selected{% endif %}>Grade 4</option>
+                        <option data-level="Elementary" value="Grade 5" {% if student.course_grade == 'Grade 5' %}selected{% endif %}>Grade 5</option>
+                        <option data-level="Elementary" value="Grade 6" {% if student.course_grade == 'Grade 6' %}selected{% endif %}>Grade 6</option>
+                        <option data-level="High School" value="Grade 7" {% if student.course_grade == 'Grade 7' %}selected{% endif %}>Grade 7</option>
+                        <option data-level="High School" value="Grade 8" {% if student.course_grade == 'Grade 8' %}selected{% endif %}>Grade 8</option>
+                        <option data-level="High School" value="Grade 9" {% if student.course_grade == 'Grade 9' %}selected{% endif %}>Grade 9</option>
+                        <option data-level="High School" value="Grade 10" {% if student.course_grade == 'Grade 10' %}selected{% endif %}>Grade 10</option>
+                        <option data-level="Senior High School" value="Grade 11" {% if student.course_grade == 'Grade 11' %}selected{% endif %}>Grade 11</option>
+                        <option data-level="Senior High School" value="Grade 12" {% if student.course_grade == 'Grade 12' %}selected{% endif %}>Grade 12</option>
+                        <option data-level="College" value="Bachelor of Science in Computer Science" {% if student.course_grade == 'Bachelor of Science in Computer Science' %}selected{% endif %}>Bachelor of Science in Computer Science</option>
+                        <option data-level="College" value="Bachelor of Science in Business Administration" {% if student.course_grade == 'Bachelor of Science in Business Administration' %}selected{% endif %}>Bachelor of Science in Business Administration</option>
+                        <option data-level="College" value="Bachelor of Elementary Education" {% if student.course_grade == 'Bachelor of Elementary Education' %}selected{% endif %}>Bachelor of Elementary Education</option>
+                        <option data-level="College" value="Bachelor of Secondary Education Major in English" {% if student.course_grade == 'Bachelor of Secondary Education Major in English' %}selected{% endif %}>Bachelor of Secondary Education Major in English</option>
+                        <option data-level="College" value="Bachelor of Secondary Education Major in Math" {% if student.course_grade == 'Bachelor of Secondary Education Major in Math' %}selected{% endif %}>Bachelor of Secondary Education Major in Math</option>
+                        <option data-level="College" value="Bachelor of Science in Hospitality Management" {% if student.course_grade == 'Bachelor of Science in Hospitality Management' %}selected{% endif %}>Bachelor of Science in Hospitality Management</option>
+                        <option data-level="College" value="Bachelor of Science in Tourism Management" {% if student.course_grade == 'Bachelor of Science in Tourism Management' %}selected{% endif %}>Bachelor of Science in Tourism Management</option>
+                        <option data-level="College" value="Bachelor of Science in Political Science" {% if student.course_grade == 'Bachelor of Science in Political Science' %}selected{% endif %}>Bachelor of Science in Political Science</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="student_id" id="student_id_label" class="form-label required">Student ID</label>
+                    <input type="number" id="student_id" name="student_id" class="form-control" value="{{ student.student_id or '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="address" class="form-label required">Complete Address</label>
+                    <textarea id="address" name="address" rows="3" class="form-control" required>{{ student.address or '' }}</textarea>
+                </div>
+
+            </div>
+            
+        </div>
+        
+        <button type="submit" class="btn btn-info btn-lg mt-4">
+            <i class="fas fa-save me-2"></i> Save/Update Profile
+        </button>
+    </form>
+    
+    <a href="{{ url_for('user.dashboard') }}" class="btn btn-info w-10  mt-2 small ">
+         <i class="fa-solid fa-house me-2"></i> Back to Home
+    </a>
+     
+    
+</div>
+
+<style>
+    .required::after {
+        content: " *";
+        color: red;
+    }
+</style>
+
+<script>
+(function () {
+    const courseSelect = document.getElementById('course_grade');
+    const label = document.getElementById('student_id_label');
+    const input = document.getElementById('student_id');
+    const levelSelect = document.getElementById('education_level');
+    const trackWrapper = document.getElementById('track_wrapper');
+    const trackSelect = document.getElementById('track');
+
+    const gradeLevels = [
+        'Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6',
+        'Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12'
+    ];
+
+    function updateStudentIdField() {
+        if (!courseSelect || !label || !input) return;
+        const val = courseSelect.value;
+        if (gradeLevels.includes(val)) {
+            label.textContent = 'LRN';
+            input.readOnly = false;
+        } else {
+            label.textContent = 'Student ID';
+            input.readOnly = false;
+        }
+    }
+
+    function updateTrackVisibility() {
+        if (!levelSelect || !trackWrapper) return;
+        const show = levelSelect.value === 'Senior High School';
+        trackWrapper.style.display = show ? '' : 'none';
+        if (trackSelect) {
+            trackSelect.required = show;
+            trackSelect.disabled = !show;
+            if (!show) trackSelect.value = '';
+        }
+    }
+
+    function filterCourseGradeOptions() {
+        if (!levelSelect || !courseSelect) return;
+        const level = levelSelect.value;
+        const options = courseSelect.querySelectorAll('option[data-level]');
+        options.forEach(opt => {
+            opt.hidden = level ? opt.dataset.level !== level : false;
+        });
+        const current = courseSelect.value;
+        if (current) {
+            const currentOpt = courseSelect.querySelector(`option[value="${current}"]`);
+            if (currentOpt && currentOpt.hidden) courseSelect.value = '';
+        }
+        updateStudentIdField();
+    }
+
+    if (courseSelect) courseSelect.addEventListener('change', updateStudentIdField);
+    if (levelSelect) {
+        levelSelect.addEventListener('change', updateTrackVisibility);
+        levelSelect.addEventListener('change', filterCourseGradeOptions);
+    }
+
+    updateStudentIdField();
+    updateTrackVisibility();
+    filterCourseGradeOptions();
+})();
+</script>
+{% endblock %}

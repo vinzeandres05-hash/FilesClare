@@ -1,0 +1,98 @@
+/* --- General Styling --- */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    overflow-x: hidden;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* --- Background Shapes --- */
+.bg-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    background: linear-gradient(135deg, #c4dcf3 0%, #ededee 100%);
+}
+
+.shape { position: absolute; border-radius: 50%; }
+.shape-1 { width: 120vh; height: 120vh; background-color: rgba(255, 255, 255, 0.2); top: -50vh; left: -20vh; }
+.shape-2 { width: 100vh; height: 100vh; background-color: rgba(0, 0, 0, 0.05); bottom: -40vh; right: -20vh; }
+.shape-3 { width: 80vh; height: 80vh; background-color: rgba(36, 147, 177, 0.1); top: 10vh; right: -30vh; }
+
+/* --- Navbar Styling --- */
+.navbar {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    transition: 0.3s;
+}
+
+.nav-link {
+    color: #333 !important;
+    font-weight: 600;
+    margin-left: 1rem;
+    transition: 0.3s;
+}
+
+.nav-link:hover { color: #0dcaf0 !important; }
+
+/* --- Hero Section --- */
+.hero-section {
+    padding-top: 10rem;
+    padding-bottom: 5rem;
+}
+
+.main-heading {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #173190;
+    margin-bottom: 1.5rem;
+}
+
+.hero-text {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #444;
+    max-width: 600px;
+    margin-bottom: 2rem;
+}
+
+/* --- Form Styling --- */
+.form-section {
+    transition: transform 0.3s;
+}
+
+.form-section:hover {
+    transform: translateY(-5px);
+}
+
+.form-control-lg {
+    border-radius: 10px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+}
+
+.form-control-lg:focus {
+    border-color: #0dcaf0;
+    box-shadow: 0 0 10px rgba(13, 202, 240, 0.2);
+}
+
+/* --- Sections --- */
+section {
+    padding: 100px 0;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+    .main-heading { font-size: 2.5rem; text-align: center; }
+    .hero-text { text-align: center; margin: 0 auto 2rem auto; }
+    .hero-section { padding-top: 7rem; }
+    .left-content-padding { padding: 0 15px; }
+}

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClareFiles | OTP Verification</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='login_style.css') }}">
+    
+    <style>
+        /* --- OTP Specific Overrides (Para bumagay sa Landing Page) --- */
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .hero-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+
+        .otp-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .theme-alert-custom {
+            background-color: #e7f3ff;
+            border-left: 5px solid #0dcaf0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .otp-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 30px 0;
+        }
+
+        .otp-input {
+            width: 55px;
+            height: 65px;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #173190;
+            background-color: #f1f4f9;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .otp-input:focus {
+            border-color: #0dcaf0;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(13, 202, 240, 0.2);
+            outline: none;
+        }
+
+        .btn-verify {
+            background: #173190;
+            border: none;
+            padding: 15px;
+            font-weight: 700;
+            border-radius: 12px;
+            transition: 0.3s;
+        }
+
+        .btn-verify:hover {
+            background: #0dcaf0;
+            transform: translateY(-2px);
+        }
+
+        .resend-link {
+            color: #173190;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .resend-link:hover {
+            color: #0dcaf0;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-wrapper">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <nav class="navbar navbar-light bg-transparent">
+        <div class="container justify-content-center">
+            <a class="navbar-brand fw-bold text-dark" href="/">ClareFiles</a>
+        </div>
+    </nav>
+  
+    <div class="container hero-section">   
+        <div class="otp-card">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <img src="{{ url_for('static', filename='images/logo_school.png') }}" alt="Logo" class="img-fluid mb-3" style="max-width: 80px;">
+            <h4 class="fw-bold text-dark mb-4">Verification Required</h4>
+
+            <div class="theme-alert-custom">
+                 <p class="mb-1 text-dark"><strong>Code Sent!</strong></p>
+                 <p class="small text-muted mb-0">Check your inbox: <strong>{{ email }}</strong></p>
+            </div>
+            
+            <p class="text-muted mb-2">Please enter the 6-digit code below.</p>
+
+            <form action="/verify-otp" method="post" id="otpForm">
+                <div class="otp-inputs">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-1" required autocomplete="off">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-2" required autocomplete="off">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-3" required autocomplete="off">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-4" required autocomplete="off">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-5" required autocomplete="off">
+                    <input type="text" class="otp-input" maxlength="1" id="otp-6" required autocomplete="off">
+                </div>
+                
+                <input type="hidden" id="full-otp" name="otp_input">
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-verify text-white shadow-sm">Verify & Login</button>
+                </div>
+                
+                <p class="mt-4 text-muted small">
+                    Didn't receive the code? <br>
+                    <a href="{{ url_for('user.resend_otp') }}" class="resend-link">Resend Verification Code</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const inputs = document.querySelectorAll('.otp-input');
+        const hiddenInput = document.getElementById('full-otp');
+
+        inputs.forEach((input, index) => {
+            // Auto focus next input
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+                combineOTP();
+            });
+
+            // Backspace handling
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value.length === 0 && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+        });
+
+        function combineOTP() {
+            let code = "";
+            inputs.forEach(input => code += input.value);
+            hiddenInput.value = code;
+        }
+
+        // Auto focus first input on load
+        window.onload = () => inputs[0].focus();
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

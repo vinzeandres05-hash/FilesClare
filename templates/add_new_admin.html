@@ -1,0 +1,196 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<style>
+    /* Add Admin Form Custom Styles */
+    .form-wrapper {
+        max-width: 650px;
+        margin: 0 auto;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    }
+
+    .form-header {
+        background: rgba(44, 197, 173, 0.1);
+        padding: 25px;
+        border-bottom: 1px solid var(--border-color);
+        text-align: center;
+    }
+
+    .form-header h2 {
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin: 0;
+        letter-spacing: 0.5px;
+    }
+
+    .form-body {
+        padding: 35px;
+    }
+
+    /* Input Styling */
+    .custom-label {
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .custom-input {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--border-color) !important;
+        color: #ffffff !important;
+        padding: 12px 15px;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: 0.3s;
+        width: 100%;
+    }
+
+    .custom-input:focus {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 0.25rem rgba(44, 197, 173, 0.1) !important;
+        outline: none;
+    }
+
+    .custom-input::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Select Dropdown styling */
+    select.custom-input option {
+        background-color: #1a1d29;
+        color: white;
+    }
+
+    /* Flash Messages */
+    .flash-item {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .flash-success { background: rgba(44, 197, 173, 0.1); color: #2cc5ad; border: 1px solid #2cc5ad; }
+    .flash-danger { background: rgba(255, 77, 77, 0.1); color: #ff4d4d; border: 1px solid #ff4d4d; }
+
+    /* Buttons */
+    .btn-group-custom {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .btn-submit {
+        background-color: var(--accent);
+        color: #000;
+        font-weight: 700;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 10px;
+        flex: 2;
+        transition: 0.3s;
+        text-transform: uppercase;
+        font-size: 13px;
+    }
+
+    .btn-submit:hover {
+        background-color: #24a894;
+        transform: translateY(-2px);
+    }
+
+    .btn-cancel {
+        background-color: transparent;
+        color: #a0a4b8;
+        border: 1px solid var(--border-color);
+        padding: 12px 25px;
+        border-radius: 10px;
+        flex: 1;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 13px;
+        transition: 0.3s;
+    }
+
+    .btn-cancel:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+</style>
+
+<div class="container-fluid p-4">
+    <div class="form-wrapper">
+        <div class="form-header">
+            <h2><i class="bi bi-person-plus-fill me-2"></i>CREATE NEW ADMIN</h2>
+        </div>
+
+        <div class="form-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-item flash-{{ 'success' if category == 'success' else 'danger' }}">
+                            <i class="bi {{ 'bi-check-circle-fill' if category == 'success' else 'bi-exclamation-triangle-fill' }}"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-12 mb-4">
+                        <label class="custom-label" for="fullname">Full Name</label>
+                        <input type="text" id="fullname" name="fullname" class="custom-input" placeholder="Enter complete name" required>
+                    </div>
+
+                    <div class="col-md-12 mb-4">
+                        <label class="custom-label" for="role_access">Role Access Level</label>
+                        <select id="role_access" name="role_access" class="custom-input" required>
+                            <option value="" disabled selected>-- Select Permissions --</option>
+                            {% for role in roles %}
+                                <option value="{{ role }}">{{ role }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-12 mb-4">
+                        <label class="custom-label" for="email">Email / Username</label>
+                        <input type="email" id="email" name="email" class="custom-input" placeholder="admin@school.edu.ph" required>
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <label class="custom-label" for="password">Password</label>
+                        <input type="password" id="password" name="password" class="custom-input" placeholder="••••••••" required>
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <label class="custom-label" for="confirm_password">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="custom-input" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <div class="btn-group-custom">
+                    <button type="submit" class="btn-submit">
+                        <i class="bi bi-shield-check me-2"></i> CREATE ACCOUNT
+                    </button>
+                    <a href="{{ url_for('admin.admin_manage_accounts') }}" class="btn-cancel">
+                        CANCEL
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .req-card {
+        background: rgba(255,255,255,0.97);
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+        padding: 1.4rem 1.6rem;
+        color: #222;
+    }
+
+    /* ---- Timeline ---- */
+    .tl-track {
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin: 1rem 0 0.5rem;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+    .tl-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 0 0 auto;
+        min-width: 72px;
+        max-width: 90px;
+        position: relative;
+    }
+    .tl-dot {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border: 2px solid #dee2e6;
+        background: #f8f9fa;
+        color: #adb5bd;
+        transition: all .3s;
+        position: relative;
+        z-index: 1;
+    }
+    .tl-label {
+        font-size: 10px;
+        font-weight: 600;
+        text-align: center;
+        margin-top: 5px;
+        color: #adb5bd;
+        line-height: 1.3;
+        max-width: 80px;
+    }
+    .tl-connector {
+        flex: 1 1 auto;
+        min-width: 20px;
+        height: 3px;
+        background: #dee2e6;
+        margin-top: 17px;
+        border-radius: 2px;
+        transition: background .3s;
+    }
+    /* done = milestone passed */
+    .tl-step.done .tl-dot {
+        background: #2cc5ad;
+        border-color: #2cc5ad;
+        color: #fff;
+    }
+    .tl-step.done .tl-label { color: #2cc5ad; }
+    .tl-connector.done { background: #2cc5ad; }
+    /* active = current step */
+    .tl-step.active .tl-dot {
+        background: #0dcaf0;
+        border-color: #0dcaf0;
+        color: #fff;
+        box-shadow: 0 0 0 4px rgba(13,202,240,.2);
+    }
+    .tl-step.active .tl-label { color: #0dcaf0; font-weight: 700; }
+    /* rejected override */
+    .tl-step.rejected .tl-dot {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: #fff;
+    }
+
+    /* ---- Vault card ---- */
+    .vault-box {
+        background: rgba(44,197,173,.06);
+        border: 1px solid rgba(44,197,173,.35);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-top: 0.9rem;
+    }
+</style>
+
+<div class="content-card">
+    <div class="content-header d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-list-alt me-2"></i>Request History & Status</h2>
+        <a href="{{ url_for('user.new_request') }}" class="btn btn-info">
+            <i class="fas fa-folder-plus me-1"></i> New Request
+        </a>
+    </div>
+
+    <p class="text-secondary mb-4">Track the progress of all your document requests below.</p>
+
+    {% if request_history %}
+        {% for req in request_history %}
+        <div class="req-card mb-3">
+
+            {# ── Header row ── #}
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark">{{ req.document }}</h5>
+                    <small class="text-muted">
+                        Request #{{ req.id }} &middot; Submitted {{ req.timestamp.strftime('%b %d, %Y') }}
+                        {% if req.purpose %} &middot; <em>{{ req.purpose | truncate(60) }}</em>{% endif %}
+                    </small>
+                </div>
+                <div class="text-end">
+                    <span class="status-{{ req.status }}">{{ req.status | upper }}</span>
+                    {% if req.final_price and req.final_price > 0 %}
+                    <div class="fw-bold text-success mt-1" style="font-size:0.9rem;">₱{{ "%.2f"|format(req.final_price) }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if req.status == 'Rejected' %}
+            {# ── Rejected state ── #}
+            <div class="alert alert-danger py-2 mb-0 d-flex align-items-center gap-2" style="font-size:0.88rem;">
+                <i class="fas fa-times-circle fa-lg"></i>
+                <span>This request was <strong>rejected</strong>. You may submit a new request if needed. <br><strong>REASON:</strong> {{ req.rejection_reason or 'No reason provided.' }}</span>
+
+            </div>
+
+            {% else %}
+            {# ── Progress Timeline ── #}
+            <div class="tl-track">
+
+                {# Step 1 – Request Received (always done for non-rejected) #}
+                <div class="tl-step done">
+                    <div class="tl-dot"><i class="fas fa-file-alt"></i></div>
+                    <div class="tl-label">Request<br>Received</div>
+                </div>
+
+                <div class="tl-connector {% if req.status in ['Accepted','Processing','Ready for pickup','Ready for delivery','Completed'] %}done{% endif %}"></div>
+
+                {# Step 2 – Approved #}
+                <div class="tl-step
+                    {% if req.status in ['Processing','Ready for pickup','Ready for delivery','Completed'] %}done
+                    {% elif req.status == 'Accepted' %}active
+                    {% endif %}">
+                    <div class="tl-dot"><i class="fas fa-thumbs-up"></i></div>
+                    <div class="tl-label">Approved &amp;<br>Awaiting Payment</div>
+                </div>
+
+                <div class="tl-connector {% if req.status in ['Processing','Ready for pickup','Ready for delivery','Completed'] %}done{% endif %}"></div>
+
+                {# Step 3 – Payment Verified / Processing #}
+                <div class="tl-step
+                    {% if req.status in ['Ready for pickup','Ready for delivery','Completed'] %}done
+                    {% elif req.status == 'Processing' %}active
+                    {% endif %}">
+                    <div class="tl-dot"><i class="fas fa-credit-card"></i></div>
+                    <div class="tl-label">Payment<br>Verified</div>
+                </div>
+
+                <div class="tl-connector {% if req.status in ['Ready for pickup','Ready for delivery','Completed'] %}done{% endif %}"></div>
+
+                {# Step 4 – Ready for Pickup / Shipping #}
+                <div class="tl-step
+                    {% if req.status == 'Completed' %}done
+                    {% elif req.status in ['Ready for pickup','Ready for delivery'] %}active
+                    {% endif %}">
+                    <div class="tl-dot">
+                        {% if req.delivery_method and 'Delivery' in req.delivery_method %}
+                        <i class="fas fa-truck"></i>
+                        {% else %}
+                        <i class="fas fa-box"></i>
+                        {% endif %}
+                    </div>
+                    <div class="tl-label">
+                        {% if req.delivery_method and 'Delivery' in req.delivery_method %}Shipping<br>Ready{% else %}Ready for<br>Pickup{% endif %}
+                    </div>
+                </div>
+
+                <div class="tl-connector {% if req.status == 'Completed' %}done{% endif %}"></div>
+
+                {# Step 5 – Completed #}
+                <div class="tl-step {% if req.status == 'Completed' %}done{% endif %}">
+                    <div class="tl-dot"><i class="fas fa-flag-checkered"></i></div>
+                    <div class="tl-label">Completed</div>
+                </div>
+
+            </div>
+            {% endif %}
+
+            {# ── Digital Document Vault + Verifier ── #}
+            {% if req.status == 'Completed' %}
+            <div class="vault-box mt-3">
+                <div class="row g-3 align-items-center">
+
+                    {# Left: actions #}
+                    <div class="col-12 col-md">
+                        <div class="fw-bold text-dark mb-1" style="font-size:0.9rem;">
+                            <i class="fas fa-file-pdf text-success me-1"></i> Digital Certified Copy
+                        </div>
+                        <small class="text-muted d-block mb-2">Your processed document is available for immediate download.</small>
+
+                        {% if req.document_file_path %}
+                        <a href="{{ url_for('user.download_document', req_id=req.id) }}"
+                           class="btn btn-success btn-sm me-2">
+                            <i class="fas fa-download me-1"></i> Download PDF
+                        </a>
+                        {% endif %}
+
+                        {% if req.verification_token %}
+                        <a href="{{ url_for('user.verify_document', token=req.verification_token) }}"
+                           target="_blank" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-shield-alt me-1"></i> View Verification Page
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    {# Right: QR code + copy link #}
+                    {% if req.verification_token %}
+                    <div class="col-auto text-center">
+                        <div id="qr_{{ req.id }}"
+                             data-qr-url="{{ url_for('user.verify_document', token=req.verification_token, _external=True) }}"
+                             style="width:90px;height:90px;"></div>
+                        <small class="text-muted" style="font-size:10px;">Scan to verify</small>
+                    </div>
+                    <!-- <div class="col-12">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light"><i class="fas fa-link"></i></span>
+                            <input type="text" class="form-control form-control-sm bg-light"
+                                   id="verifyLink_{{ req.id }}"
+                                   value="{{ url_for('user.verify_document', token=req.verification_token, _external=True) }}"
+                                   readonly>
+                            <button class="btn btn-outline-secondary btn-sm"
+                                    onclick="copyVerifyLink('verifyLink_{{ req.id }}', this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" style="font-size:10px;">Share this link for third-party verification.</small> -->
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle me-2"></i> You have not submitted any document requests yet.
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('user.dashboard') }}" class="btn btn-info mt-3">
+        <i class="fa-solid fa-house me-2"></i> Back to Home
+    </a>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+document.querySelectorAll('[data-qr-url]').forEach(function (el) {
+    new QRCode(el, {
+        text: el.getAttribute('data-qr-url'),
+        width: 90,
+        height: 90,
+        colorDark: '#1a5c4f',
+        colorLight: '#f0faf8'
+    });
+});
+
+function copyVerifyLink(inputId, btn) {
+    var input = document.getElementById(inputId);
+    if (!input) return;
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(function () {
+        var icon = btn.querySelector('i');
+        if (icon) { icon.className = 'fas fa-check text-success'; }
+        setTimeout(function () {
+            if (icon) icon.className = 'fas fa-copy';
+        }, 2000);
+    });
+}
+</script>
+
+{% endblock %}

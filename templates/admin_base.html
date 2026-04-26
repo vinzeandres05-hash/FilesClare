@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='images/adminlogo.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='admin_sidebar.js') }}"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+    <style>
+        :root {
+            --bg-body: #0f111a;
+            --bg-sidebar: #161925;
+            --bg-card: #1f2235;
+            --accent: #2cc5ad; 
+            --text-main: #f8f9fa;
+            --text-muted: #a0a4b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+
+        /* TOP BAR */
+        .admin-top-bar {
+            margin-left: 260px;
+            height: 70px;
+            background-color: rgba(15, 17, 26, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .admin-top-bar h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin: 0;
+        }
+
+        /* SIDEBAR */
+        .admin-sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .admin-sidebar-menu h3 {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            padding: 25px 25px 10px;
+            margin: 0;
+            opacity: 0.6;
+        }
+
+        .sub-link {
+            color: var(--text-muted) !important;
+            text-decoration: none;
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.2s ease-in-out;
+            border-left: 4px solid transparent;
+        }
+
+        .sub-link:hover, .sub-link.active {
+            color: #fff !important;
+            background: rgba(44, 197, 173, 0.08);
+            border-left-color: var(--accent);
+        }
+
+        .sub-link.active i { color: var(--accent); }
+
+        /* CONTENT AREA */
+        .admin-content {
+            margin-left: 260px;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        /* LOGOUT BUTTON */
+        .logout-btn {
+            background-color: rgba(255, 77, 77, 0.1);
+            color: #ff4d4d;
+            padding: 8px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.3s;
+            border: 1px solid rgba(255, 77, 77, 0.2);
+        }
+        .logout-btn:hover { background-color: #ff4d4d; color: white; }
+
+        /* SCROLLBAR STYLE */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-body); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-card); border-radius: 10px; }
+        
+        /* Custom Styling for Notif Icons */
+    .icon-box {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .bg-dark-notif {
+        background-color: rgba(44, 197, 173, 0.05) !important;
+    }
+
+    .hover-teal:hover {
+        color: var(--accent) !important;
+        background: rgba(255,255,255,0.05) !important;
+    }
+
+    /* Animation */
+    .slideIn {
+        animation-duration: 0.3s;
+        animation-name: slideIn;
+    }
+    @keyframes slideIn {
+        from { transform: translateY(10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Toast Notification Styles */
+    .toast-container {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+    .toast-notif {
+        pointer-events: auto;
+        background: var(--bg-card);
+        border: 1px solid var(--accent);
+        border-left: 4px solid var(--accent);
+        border-radius: 10px;
+        padding: 14px 18px;
+        min-width: 320px;
+        max-width: 400px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        animation: toastSlideIn 0.4s ease forwards;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        cursor: pointer;
+        transition: opacity 0.3s;
+    }
+    .toast-notif.toast-payment {
+        border-color: #2ecc71;
+        border-left-color: #2ecc71;
+    }
+    .toast-notif.toast-request {
+        border-color: #3498db;
+        border-left-color: #3498db;
+    }
+    .toast-notif .toast-icon {
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .toast-notif .toast-body {
+        flex: 1;
+    }
+    .toast-notif .toast-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--accent);
+        margin-bottom: 3px;
+    }
+    .toast-notif.toast-payment .toast-title { color: #2ecc71; }
+    .toast-notif.toast-request .toast-title { color: #3498db; }
+    .toast-notif .toast-msg {
+        font-size: 0.85rem;
+        color: var(--text-main);
+        line-height: 1.4;
+    }
+    .toast-notif .toast-time {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+    .toast-notif .toast-close {
+        color: var(--text-muted);
+        font-size: 1rem;
+        cursor: pointer;
+        flex-shrink: 0;
+        padding: 0 2px;
+        line-height: 1;
+    }
+    .toast-notif .toast-close:hover { color: #ff4d4d; }
+    @keyframes toastSlideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes toastFadeOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100%); }
+    }
+
+    .disabled-link {
+    opacity: 0.6;
+    cursor: not-allowed !important;
+    pointer-events: none; /* Hindi maki-click */
+    color: #6c757d !important;
+    }
+
+    </style>
+</head>
+<body>
+    <div class="admin-top-bar">
+        
+        {% if session.get('admin_role') == 'Super Admin' %}
+        <h1><i class="bi bi-shield-lock-fill me-2"></i>Admin Panel</h1> 
+        {% else %}
+        <h1><i class="bi bi-shield-fill-check me-2"></i>Record Staff</h1> 
+        {% endif %}
+        <div class="d-flex align-items-center">
+           
+            <div class="dropdown me-3">
+                <button class="btn btn-link position-relative text-light p-0 border-0 shadow-none" type="button" id="notifBell" data-bs-toggle="dropdown">
+                   <i class="bi bi-bell fs-5"></i>
+                   <span id="bellTotalBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-dark {% if (notif_count + pending_req_count) == 0 %}d-none{% endif %}" style="font-size: 0.55em;">
+                    {{ notif_count + pending_req_count }}
+                   </span>
+                </button>
+
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border border-secondary animate slideIn" aria-labelledby="notifBell" 
+                    style="width: 350px; background-color: #1a1d29; border-radius: 12px; margin-top: 15px; padding: 0;">
+        
+                    <li class="dropdown-header py-3 border-bottom border-secondary text-white fw-bold d-flex justify-content-between align-items-center">
+                       <span>RECENT NOTIFICATIONS</span>
+                        <span id="notifTotalLabel" class="badge bg-primary bg-opacity-10 text-primary border border-primary small" style="font-size: 10px;">{{ notifs|length }} Total</span>
+                    </li>
+
+                    <div id="notifListContainer" style="max-height: 380px; overflow-y: auto;">
+                      {% for n in notifs %}
+                        <li>
+                            <a class="dropdown-item py-3 border-bottom border-secondary transition-all {% if n.is_read == 0 %}bg-dark-notif{% endif %}" 
+                                href="{{ url_for('admin_payment.mark_read', notif_id=n.id) }}" 
+                                style="border-bottom: 1px solid rgba(255,255,255,0.05) !important; white-space: normal;">
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3 mt-1">
+                                        {% if 'payment' in n.message.lower() or 'paid' in n.message.lower() or '₱' in n.message %}
+                                        <div class="icon-box bg-success bg-opacity-10 text-success">
+                                            <i class="bi bi-cash-coin"></i>
+                                        </div>
+                                       {% elif 'request' in n.message.lower() or 'document' in n.message.lower() %}
+                                        <div class="icon-box bg-info bg-opacity-10 text-info">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        </div>
+                                       {% else %}
+                                        <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                                                <i class="bi bi-info-circle"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between">
+                                            <small class="text-white fw-bold" style="font-size: 10px;">{{ n.created_at.strftime('%b %d, %I:%M %p') }}</small>
+                                            {% if n.is_read == 0 %}
+                                            <span class="badge bg-primary rounded-pill p-1" style="width: 6px; height: 6px;"> </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-white mt-1" style="font-size: 0.85rem; line-height: 1.4;">{{ n.message }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="py-5 text-center text-muted">
+                            <i class="bi bi-bell-slash fs-1 d-block mb-2 opacity-25"></i>
+                            <small>No notifications found</small>
+                        </li>
+                        {% endfor %}
+                    </div>
+
+                    <li class="bg-dark bg-opacity-50">
+                        <div class="row g-0">
+                            <div class="col-6 border-end border-secondary">
+                                <a class="dropdown-item text-center small text-white fw-bold py-3 hover-teal" href="{{ url_for('admin_payment.mark_all_read') }}">
+                                    <i class="bi bi-check2-all me-1"></i> Mark All Read
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                <a class="dropdown-item text-center small text-white fw-bold py-3 hover-teal" href="{{ url_for('admin_payment.clear_all_notifications') }}">
+                                    <i class="bi bi-list-ul me-1"></i> Clear All
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="me-3 text-light d-flex align-items-center gap-2">
+                <i class="bi bi-person-circle fs-5"></i>
+                <span class="fw-semibold"> {{ session['admin_fullname'] }}</span>
+            </div>
+
+            <a href="{{ url_for('admin.admin_logout') }}" class="logout-btn">LOGOUT</a>
+        </div>
+    </div>
+
+    <div class="admin-sidebar">
+        
+        <nav class="admin-sidebar-menu p-2">
+            <a href="{{ url_for('admin.overview') }}" class="sub-link {{ 'active' if menu_type == 'overview' else '' }}">
+                <i class="bi bi-grid-fill"></i> Dashboard
+            </a>
+            
+            <h3>Requests Management</h3>
+            <a href="{{ url_for('admin.admin', menu_type='all_requests') }}" class="sub-link {{ 'active' if menu_type == 'all_requests' else '' }}">
+                <i class="bi bi-stack"></i> All Requests
+                <span id="badge_all_requests" class="badge rounded-pill bg-secondary ms-auto d-none">0</span>
+            </a>
+            <a href="{{ url_for('admin.admin', menu_type='pending_requests') }}" class="sub-link {{ 'active' if menu_type == 'pending_requests' else '' }}">
+                <i class="bi bi-hourglass-split"></i> Pending
+                <span id="pendingReqBadge" class="badge rounded-pill bg-danger ms-auto {% if pending_req_count == 0 %}d-none{% endif %}">{{ pending_req_count }}</span>
+            </a>
+            <a href="{{ url_for('admin.admin', menu_type='approved') }}" class="sub-link {{ 'active' if menu_type == 'approved' else '' }}">
+                <i class="bi bi-check-circle-fill"></i> Approved
+                <span id="badge_approved" class="badge rounded-pill bg-success ms-auto d-none">0</span>
+            </a>
+            <a href="{{ url_for('admin.admin', menu_type='rejected') }}" class="sub-link {{ 'active' if menu_type == 'rejected' else '' }}">
+                <i class="bi bi-x-circle-fill"></i> Rejected
+                <span id="badge_rejected" class="badge rounded-pill bg-danger ms-auto d-none">0</span>
+            </a>
+            <a href="{{ url_for('admin.admin', menu_type='processing') }}" class="sub-link {{ 'active' if menu_type == 'processing' else '' }}">
+                <i class="bi bi-gear-fill"></i> Processing
+                <span id="badge_processing" class="badge rounded-pill bg-primary ms-auto d-none">0</span>
+            </a>
+            <a href="{{ url_for('admin.admin', menu_type='ready_for_pickup') }}" class="sub-link {{ 'active' if menu_type == 'ready_for_pickup' else '' }}">
+                <i class="bi bi-box-seam-fill"></i> Ready for Pickup
+                <span id="badge_ready_for_pickup" class="badge rounded-pill bg-info text-dark ms-auto d-none">0</span>
+            </a>
+            <a href="{{ url_for('admin.admin', menu_type='ready_for_delivery') }}" class="sub-link {{ 'active' if menu_type == 'ready_for_delivery' else '' }}">
+                <i class="bi bi-truck"></i> Ready for Delivery
+                <span id="badge_ready_for_delivery" class="badge rounded-pill bg-warning text-dark ms-auto d-none">0</span>
+            </a>
+            <a href="{{ url_for('admin.admin', menu_type='completed') }}" class="sub-link {{ 'active' if menu_type == 'completed' else '' }}">
+                <i class="bi bi-flag-fill"></i> Completed
+                <span id="badge_completed" class="badge rounded-pill bg-secondary ms-auto d-none">0</span>
+            </a>
+
+            <h3>Payments</h3>
+                <a href="{{ url_for('admin_payment.manage_payments', status='pending') }}" 
+                   class="sub-link {{ 'active' if current_status == 'pending' else '' }}">
+                   <i class="bi bi-credit-card-fill"></i> Pending Verification
+                   <span id="paymentNotifBadge" class="badge rounded-pill bg-warning text-dark ms-auto {% if notif_count == 0 %}d-none{% endif %}">{{ notif_count }}</span>
+                </a>
+                <a href="{{ url_for('admin_payment.manage_payments', status='verified') }}" 
+                   class="sub-link {{ 'active' if current_status == 'verified' else '' }}">
+                   <i class="bi bi-patch-check-fill"></i> Approved Proof
+                </a>
+                <a href="{{ url_for('admin_payment.manage_payments', status='rejected') }}" 
+                   class="sub-link {{ 'active' if current_status == 'rejected' else '' }}">
+                   <i class="bi bi-patch-exclamation-fill"></i> Rejected Proof
+                </a>
+
+            <h3>Administration</h3>
+            
+            <a href="{{ url_for('admin.student_list_view') }}" class="sub-link"><i class="fas fa-users"></i> Students</a>
+            {% if session.get('admin_role') == 'Super Admin' %}
+            <h3>Accounts & Data</h3>
+            
+            
+            <a href="{{ url_for('admin.admin_manage_accounts') }}" class="sub-link">
+                <i class="bi bi-person-badge-fill"></i> Admins
+                <a href="{{ url_for('admin.admin', menu_type='manage_docs') }}" class="sub-link {{ 'active' if menu_type == 'manage_docs' else '' }}">
+                <i class="bi bi-file-earmark-text-fill"></i> Documents
+            </a>
+            </a>    
+            {% else %}
+            <a href="javascript:void(0);" class="sub-link disabled-link" title="Super Admin access only">
+            </a>
+           {% endif %}
+
+            {% if session.get('admin_role') == 'Super Admin' %}
+            <a class="sub-link" href="{{ url_for('admin.admin_reports') }}"><i class="bi bi-graph-up-arrow"></i> Reports</a>
+            <a href="{{ url_for('admin.view_messages') }}" 
+                   class="sub-link {{ 'active' if request.path == url_for('admin.view_messages') else '' }}">
+                    <i class="bi bi-chat-quote-fill"></i> Student Concerns
+                   
+                        <span class="badge rounded-pill bg-danger ms-auto">{{ unread_concerns_count }}</span>
+                </a>
+            {% else %}
+            <a href="javascript:void(0);" class="sub-link disabled-link" title="Super Admin access only">
+            </a>
+            {% endif %}     
+        </nav>
+    </div>
+
+    <div class="admin-content">
+        {% block admin_content %}{% endblock %}
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script>
+        (function () {
+            const notifBell = document.getElementById('notifBell');
+            const bellTotalBadge = document.getElementById('bellTotalBadge');
+            const notifTotalLabel = document.getElementById('notifTotalLabel');
+            const notifListContainer = document.getElementById('notifListContainer');
+            const pendingReqBadge = document.getElementById('pendingReqBadge');
+            const paymentNotifBadge = document.getElementById('paymentNotifBadge');
+            const toastContainer = document.getElementById('toastContainer');
+
+            if (!notifBell || !bellTotalBadge || !notifTotalLabel || !notifListContainer) return;
+
+            const liveUrl = "{{ url_for('admin_payment.live_notifications') }}";
+            const statusCountsUrl = "{{ url_for('admin.api_status_counts') }}";
+            const markReadBase = "{{ url_for('admin_payment.mark_read', notif_id=0) }}".replace(/0$/, '');
+            const statusBadgeIds = ['all_requests','pending_requests','approved','rejected','processing','ready_for_pickup','ready_for_delivery','completed'];
+
+            let lastKnownNotifIds = new Set();
+            let isFirstLoad = true;
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text || '';
+                return div.innerHTML;
+            }
+
+            function playNotifSound() {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.4);
+                } catch (e) { /* silent fail */ }
+            }
+
+            function showToast(notif) {
+                if (!toastContainer) return;
+                const cat = notif.category || '';
+                const typeClass = cat === 'payment' ? 'toast-payment' : cat === 'request' ? 'toast-request' : '';
+                const iconClass = cat === 'payment' ? 'bi-cash-coin text-success' : cat === 'request' ? 'bi-file-earmark-text text-info' : 'bi-bell text-primary';
+                const title = cat === 'payment' ? 'New Payment' : cat === 'request' ? 'New Request' : 'Notification';
+
+                const toast = document.createElement('div');
+                toast.className = 'toast-notif ' + typeClass;
+                toast.innerHTML = [
+                    '<i class="bi ' + iconClass + ' toast-icon"></i>',
+                    '<div class="toast-body">',
+                    '  <div class="toast-title">' + escapeHtml(title) + '</div>',
+                    '  <div class="toast-msg">' + escapeHtml(notif.message || '') + '</div>',
+                    '  <div class="toast-time">' + escapeHtml(notif.created_at_text || 'Just now') + '</div>',
+                    '</div>',
+                    '<span class="toast-close">&times;</span>'
+                ].join('');
+
+                toast.querySelector('.toast-close').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    dismissToast(toast);
+                });
+                toast.addEventListener('click', function () {
+                    window.location.href = markReadBase + notif.id;
+                });
+
+                toastContainer.prepend(toast);
+
+                setTimeout(function () { dismissToast(toast); }, 6000);
+
+                if (toastContainer.children.length > 4) {
+                    dismissToast(toastContainer.lastElementChild);
+                }
+            }
+
+            function dismissToast(el) {
+                if (!el || !el.parentNode) return;
+                el.style.animation = 'toastFadeOut 0.3s ease forwards';
+                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+            }
+
+            function getNotifIconHtml(notif) {
+                const msg = (notif.message || '').toLowerCase();
+                if (notif.category === 'payment' || msg.includes('payment') || msg.includes('paid') || msg.includes('₱')) {
+                    return '<div class="icon-box bg-success bg-opacity-10 text-success"><i class="bi bi-cash-coin"></i></div>';
+                }
+                if (notif.category === 'request' || msg.includes('request') || msg.includes('document')) {
+                    return '<div class="icon-box bg-info bg-opacity-10 text-info"><i class="bi bi-file-earmark-text"></i></div>';
+                }
+                return '<div class="icon-box bg-primary bg-opacity-10 text-primary"><i class="bi bi-info-circle"></i></div>';
+            }
+
+            function renderNotifList(notifs) {
+                if (!Array.isArray(notifs) || notifs.length === 0) {
+                    notifListContainer.innerHTML = [
+                        '<li class="py-5 text-center text-muted">',
+                        '<i class="bi bi-bell-slash fs-1 d-block mb-2 opacity-25"></i>',
+                        '<small>No notifications found</small>',
+                        '</li>'
+                    ].join('');
+                    return;
+                }
+
+                const html = notifs.map((notif) => {
+                    const highlightClass = Number(notif.is_read) === 0 ? 'bg-dark-notif' : '';
+                    const unreadDot = Number(notif.is_read) === 0
+                        ? '<span class="badge bg-primary rounded-pill p-1" style="width: 6px; height: 6px;"> </span>'
+                        : '';
+
+                    return [
+                        '<li>',
+                        `<a class="dropdown-item py-3 border-bottom border-secondary transition-all ${highlightClass}" href="${markReadBase}${notif.id}" style="border-bottom: 1px solid rgba(255,255,255,0.05) !important; white-space: normal;">`,
+                        '<div class="d-flex align-items-start">',
+                        `<div class="me-3 mt-1">${getNotifIconHtml(notif)}</div>`,
+                        '<div class="flex-grow-1">',
+                        '<div class="d-flex justify-content-between">',
+                        `<small class="text-white fw-bold" style="font-size: 10px;">${escapeHtml(notif.created_at_text || '')}</small>`,
+                        unreadDot,
+                        '</div>',
+                        `<div class="text-white mt-1" style="font-size: 0.85rem; line-height: 1.4;">${escapeHtml(notif.message || '')}</div>`,
+                        '</div>',
+                        '</div>',
+                        '</a>',
+                        '</li>'
+                    ].join('');
+                }).join('');
+
+                notifListContainer.innerHTML = html;
+            }
+
+            function setBadgeValue(el, value) {
+                if (!el) return;
+                const count = Number(value) || 0;
+                el.textContent = String(count);
+                el.style.display = count > 0 ? '' : 'none';
+            }
+
+            async function refreshNotifications() {
+                try {
+                    const res = await fetch(liveUrl, {
+                        method: 'GET',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin'
+                    });
+                    if (!res.ok) return;
+
+                    const data = await res.json();
+                    const totalBadgeCount = Number(data.total_badge_count) || 0;
+
+                    bellTotalBadge.textContent = String(totalBadgeCount);
+                    bellTotalBadge.style.display = totalBadgeCount > 0 ? '' : 'none';
+                    notifTotalLabel.textContent = `${Array.isArray(data.notifs) ? data.notifs.length : 0} Total`;
+
+                    setBadgeValue(pendingReqBadge, data.pending_req_count);
+                    setBadgeValue(paymentNotifBadge, data.notif_count);
+
+                    if (Array.isArray(data.notifs)) {
+                        const currentIds = new Set(data.notifs.map(n => n.id));
+                        if (!isFirstLoad) {
+                            const newNotifs = data.notifs.filter(n => !lastKnownNotifIds.has(n.id) && Number(n.is_read) === 0);
+                            if (newNotifs.length > 0) {
+                                playNotifSound();
+                                newNotifs.forEach(n => showToast(n));
+                            }
+                        }
+                        lastKnownNotifIds = currentIds;
+                        isFirstLoad = false;
+                    }
+
+                    renderNotifList(data.notifs);
+                } catch (e) {
+                    console.error('Live notifications refresh failed:', e);
+                }
+            }
+
+            async function refreshStatusCounts() {
+                try {
+                    const res = await fetch(statusCountsUrl, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin'
+                    });
+                    if (!res.ok) return;
+                    const counts = await res.json();
+                    statusBadgeIds.forEach(key => {
+                        const el = document.getElementById('badge_' + key);
+                        if (!el) return;
+                        const n = Number(counts[key]) || 0;
+                        el.textContent = String(n);
+                        el.classList.toggle('d-none', n === 0);
+                    });
+                } catch (e) {
+                    console.error('Status counts refresh failed:', e);
+                }
+            }
+
+            refreshNotifications();
+            refreshStatusCounts();
+            setInterval(refreshNotifications, 3000);
+            setInterval(refreshStatusCounts, 8000);
+        })();
+    </script>
+</body>
+</html>

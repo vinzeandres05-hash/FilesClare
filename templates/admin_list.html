@@ -1,0 +1,201 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<style>
+    /* Admin Manage Accounts Custom Styles */
+    .admin-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .header-title h2 {
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    /* Add Admin Button */
+    .btn-add-admin {
+        background-color: var(--accent);
+        color: #000 !important;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: 0.3s;
+        text-transform: uppercase;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-add-admin:hover {
+        background-color: #24a894;
+        transform: translateY(-2px);
+    }
+
+    /* Table Styling */
+    .table thead th {
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--accent);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 18px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table tbody td {
+        padding: 18px;
+        color: var(--text-main);
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+        font-size: 14px;
+    }
+
+    /* Role Tags - High Contrast */
+    .role-tag {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #fff;
+    }
+    .role-super-admin { background-color: #e67e22; border: 1px solid rgba(255,255,255,0.2); }
+    .role-record-staff { background-color: #2ecc71; border: 1px solid rgba(255,255,255,0.2); }
+    
+    /* Status Tags */
+    .status-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 20px;
+    }
+    .status-active { background-color: rgba(44, 197, 173, 0.1); color: #2cc5ad; border: 1px solid #2cc5ad; }
+    .status-inactive { background-color: rgba(255, 77, 77, 0.1); color: #ff4d4d; border: 1px solid #ff4d4d; }
+
+    /* Flash Messages */
+    .flash-item {
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-weight: 500;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .flash-success { background: rgba(44, 197, 173, 0.1); color: #2cc5ad; border: 1px solid #2cc5ad; }
+    .flash-danger { background: rgba(255, 77, 77, 0.1); color: #ff4d4d; border: 1px solid #ff4d4d; }
+</style>
+
+<div class="container-fluid p-4">
+    <div class="page-header">
+        <div class="header-title">
+            <h2 class="text-dark"><i class="bi bi-shield-lock-fill me-2 text-accent" style="color: var(--accent);"></i>Admin Account Management</h2>
+            <p class="text-muted small mb-0">Security and access control for system administrators.</p>
+        </div>
+        {% if session.get('admin_role') == 'Super Admin' %}
+        <a href="{{ url_for('admin.add_new_admin') }}" class="btn-add-admin">
+            <i class="bi bi-person-plus-fill"></i> Add New Admin
+        </a>
+        {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-item flash-{{ 'success' if category == 'success' else 'danger' }}">
+                    <i class="bi {{ 'bi-check-circle' if category == 'success' else 'bi-exclamation-triangle' }}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="admin-card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Full Name</th>
+                        <th>Email/Username</th>
+                        <th>Role Access</th>
+                        <th>Date Created</th>
+                        <th>Status</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in admin_list %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-muted">{{ admin.fullname }}</div>
+                        </td>
+                        <td class="text-muted">{{ admin.email }}</td>
+                        <td>
+                            <span class="role-tag role-{{ admin.role_access.lower().replace(' ', '-') }}">
+                                {{ admin.role_access }}
+                            </span>
+                        </td>
+                        <td class="small text-muted">{{ admin.date_created }}</td>
+                        <td>
+                            {% if admin.status == 'Active' %}
+                                <span class="status-badge status-active">ACTIVE</span>
+                            {% else %}
+                                <span class="status-badge status-inactive">INACTIVE</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if session.get('admin_role') == 'Super Admin' %}
+                            <div class="d-flex justify-content-center gap-2">
+                                <form method="POST" action="{{ url_for('admin.toggle_admin_status', admin_id=admin.id) }}" class="m-0">
+                                  {% if admin.status == 'Active' %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-bold" style="font-size: 11px; width: 100px;">
+                                        <i class="bi bi-person-x-fill"></i> DEACTIVATE
+                                    </button>
+                                  {% else %}
+                                    <button type="submit" class="btn btn-sm btn-success fw-bold" style="font-size: 11px; width: 100px;">
+                                        <i class="bi bi-person-check-fill"></i> ACTIVATE
+                                    </button>
+                                  {% endif %}
+                                </form>
+
+                                <form method="POST" action="{{ url_for('admin.delete_admin', admin_id=admin.id) }}" class="m-0" onsubmit="return confirm('Are you sure you want to delete this admin account?');">
+                                    <button type="submit" class="btn btn-sm btn-danger fw-bold" style="font-size: 11px;">
+                                        <i class="bi bi-trash3-fill"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">No actions available.</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not admin_list %}
+        <div class="text-center py-5">
+            <i class="bi bi-shield-slash fs-1 text-muted opacity-25 d-block mb-3"></i>
+            <p class="text-muted">No admin accounts found in the database.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

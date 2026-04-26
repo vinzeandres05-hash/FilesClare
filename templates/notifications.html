@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>🔔 Notifications</h2>
+    
+    <p>Here you will see automatic updates about the status of your requests and payment confirmations.</p>
+    
+    <div style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-left: 5px solid #00796b;">
+        <h4>Request Status Update: #{{ request_id or '101' }}</h4>
+        <p>Your request for **Diploma** has been updated to **Review** ({{ date or '2025-11-10'}}).</p>
+        <small>Request Status Updates</small>
+    </div>
+    
+    <div style="margin-top: 10px; padding: 15px; border: 1px solid #ddd; border-left: 5px solid #27ae60;">
+        <h4>Payment Confirmation</h4>
+        <p>Your **Payment Proof** has been verified! Your request can now be updated to **Ready for Pickup**.</p>
+        <small>Payment Confirmations</small>
+    </div>
+
+{% endblock %}

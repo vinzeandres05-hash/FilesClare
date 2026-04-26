@@ -1,0 +1,403 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<style>
+    /* Pinalinaw na Table Design */
+    .custom-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .table { color: var(--text-main); margin-bottom: 0; }
+    .table thead th { 
+        background-color: rgba(0,0,0,0.2); 
+        color: var(--accent); 
+        text-transform: uppercase; 
+        font-size: 12px; 
+        letter-spacing: 1px;
+        border-bottom: 1px solid var(--border-color);
+        padding: 15px;
+    }
+    .table tbody td { 
+        padding: 15px; 
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+        font-size: 14px;
+    }
+    .student-info-box { line-height: 1.6; }
+    .student-label { color:black; font-size: 12px; font-weight: 600; margin-right: 5px; }
+    .status-badge { font-weight: 600; font-size: 11px; padding: 5px 10px; border-radius: 6px; text-transform: uppercase; }
+    
+    /* Input Styling */
+    .form-select-sm, .form-control-sm {
+        background-color: var(--bg-body);
+        border: 1px solid var(--border-color);
+        color: white;
+    }
+    .form-select-sm:focus, .form-control-sm:focus {
+        background-color: var(--bg-body);
+        border-color: var(--accent);
+        color: white;
+        box-shadow: none;
+    }
+</style>
+
+{% if menu_type in ['overview', 'pending_requests', 'all_requests', 'approved', 'rejected', 'processing', 'ready_for_pickup', 'ready_for_delivery','completed'] %}
+<div class="custom-card" id="requestsTableCard">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">{{ menu_type|replace('_', ' ')|title }}</h4>
+        <span class="badge bg-primary" id="tableCountBadge">{{ requests|length }} Total Items</span>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Document & Purpose</th>
+                    <th>Request Date</th>
+                    <th>Student Profile</th>
+                    <th>Status & Fee</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="requestsTbody">
+                {% for request in requests %}
+                <tr>
+                    <td class="fw-bold text-black">#{{ request.id }}</td>
+                    <td>
+                        <strong class="text-black">{{ request.document }}</strong><br>
+                        <div class="small text-muted">Purpose: {{ request.purpose or 'N/A' }}</div>
+                    </td>
+                    <td>
+                        <div class="text-black">{{ request.timestamp.strftime('%Y-%m-%d') }}</div>
+                        <div class="small text-muted">{{ request.timestamp.strftime('%H:%M') }}</div>
+                    </td>
+                    <td>
+                        <div class="student-info-box p-2 border rounded bg-light" style="font-size: 12px;">
+                            <div class="text-black"><span class="fw-bold text-primary">NAME:</span> {{ request.student_firstname }} {{ request.student_lastname }}</div>
+                            <div class="text-black"><span class="fw-bold text-primary">EMAIL:</span> {{ request.requester_email }}</div>
+                            <div class="text-black"><span class="fw-bold text-primary">STUDENT ID:</span> {{ request.student_id}}</div>
+                            <div class="text-black"><span class="fw-bold text-primary">SCHOOL YEAR OF ENTRY:</span> {{ request.year_entry}}</div>
+                            <div class="text-black"><span class="fw-bold text-primary">SCHOOL YEAR OF GRADUATION:</span> {{ request.last_school}}</div>
+                            <div class="text-black"><span class="fw-bold text-primary">DELIVERY:</span> <span class="badge bg-info text-dark">{{ request.delivery_method or 'Pick-up' }}</span></div>
+                            <div class="text-black"><span class="fw-bold text-primary">DELIVERY ADDRESS:</span> {{ request.delivery_address or request.address }}</div>
+
+                            <hr style="margin: 5px 0;">
+                            {% if request.admin_role %}
+                            <div class="text-black"><span class="fw-bold text-primary">ASSIGNED {{ request.admin_role }}</span>                            
+                                {% if request.admin_fullname %}
+                                    <span class="badge bg-success">{{ request.admin_fullname }}</span>
+                                {% else %}
+                                    <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge 
+                            {% if request.status == 'Ready for delivery' %}bg-warning text-dark
+                            {% elif request.status == 'Ready for pickup' %}bg-info text-dark
+                            {% elif request.status == 'Accepted' %}bg-success
+                            {% elif request.status == 'Rejected' %}bg-danger
+                            {% elif request.status == 'Completed' %}bg-secondary
+                            {% else %}bg-primary{% endif %} mb-1">
+                            {{ request.status }}
+                        </span>
+                        <div class="fw-bold" style="color: #2cc5ad;">₱ {{ "%.2f"|format(request.final_price or 0) }}</div>
+                    </td>
+                    <td>
+                        {% if request.status != 'Rejected' and request.status != 'Completed' %}
+                        <form method="POST" action="{{ url_for('admin.update_request_flow', req_id=request.id) }}" id="statusForm{{ request.id }}" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="rejection_reason" id="reasonInput{{ request.id }}">
+                            <input type="hidden" name="pickup_message" id="pickupMsgInput{{ request.id }}">
+                            
+                            <select name="new_status" class="form-select form-select-sm mb-2" onchange="handleStatusSelection(this, '{{ request.id }}')" required>
+                                <option value="" selected disabled hidden>Update Status</option>
+                                {% if request.status == 'Pending' %}
+                                    <option value="Accepted">Approve (Accepted)</option>
+                                    <option value="Rejected">Reject</option>
+                                {% elif request.status == 'Accepted' %}
+                                    <option value="" disabled>Awaiting Payment...</option>
+                                    <option value="Rejected">Reject</option>
+                                {% elif request.status == 'Processing' %}
+                                    {% if request.delivery_method == 'Pick-up' %}
+                                        <option value="Ready for pickup">Ready for Pickup</option>
+                                    {% else %}
+                                        <option value="Ready for delivery">Ready for Delivery</option>
+                                    {% endif %}
+                                    <option value="Rejected">Reject</option>
+                                {% elif request.status in ['Ready for pickup', 'Ready for delivery'] %}
+                                    <option value="Completed">Mark Completed & Send PDF</option>
+                                    <option value="Rejected">Reject</option>
+                                {% endif %}
+                            </select>
+
+                            <div id="pickupMsgContainer{{ request.id }}" class="mb-2" style="display: none;">
+                                <label class="small fw-bold text-info d-block mb-1">DATE:</label>
+                                <input type="date" class="form-control form-control-sm mb-1 pickup-date" data-reqid="{{ request.id }}" placeholder="Date">
+                                <label class="small fw-bold text-info d-block mb-1">TIME:</label>
+                                <input type="text" class="form-control form-control-sm mb-1 pickup-time" data-reqid="{{ request.id }}" placeholder="Time">
+                                <label class="small fw-bold text-info d-block mb-1">DESIGNATED OFFICE:</label>
+                                <input type="text" class="form-control form-control-sm pickup-office" data-reqid="{{ request.id }}" placeholder="Designated Office (e.g. Registrar's Office)">
+                            </div>
+
+                            <div id="fileContainer{{ request.id }}" class="mb-2" style="display: none;">
+                                <label class="small fw-bold text-danger">Attach Document (PDF):</label>
+                                <input type="file" name="document_file" class="form-control form-control-sm border-danger" accept=".pdf">
+                            </div>
+
+                            {% if request.status == 'Pending' and request.delivery_method == 'Door-to-Door Delivery / Add Another Fee' %}
+                                <div class="input-group input-group-sm mb-2">
+                                    <span class="input-group-text bg-dark border-secondary text-white">₱</span>
+                                    <input type="number" step="0.01" name="manual_price" class="form-control" placeholder="Enter Total Fee" required>
+                                </div>
+                            {% endif %}
+                            
+                            <button type="submit" class="btn btn-success btn-sm w-100 mb-1">Update</button>
+                        </form>
+                        {% endif %}
+                
+                        <form method="POST" action="{{ url_for('admin.update_request_flow', req_id=request.id) }}" onsubmit="return confirm('Delete #{{ request.id }}?');">
+                            <input type="hidden" name="action" value="delete">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100" style="font-size: 11px;">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary text-white">
+            <div class="modal-header border-secondary bg-danger text-white">
+                <h5 class="modal-title">Reason for Rejection</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Why is this request being rejected?</p>
+                <textarea id="modalReasonText" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="I-type ang dahilan dito..."></textarea>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmReject()">Submit Rejection</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if menu_type == 'manage_docs' %}
+<div class="custom-card">
+    <h3 class="mb-4">Add New Document Type</h3>
+    <form method="POST" action="{{ url_for('admin.admin', menu_type='manage_docs') }}" class="mb-5">
+        <input type="hidden" name="action" value="add_doc">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-white text-uppercase fw-bold">Document Name</label>
+                <input type="text" name="doc_name" class="form-control" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-white text-uppercase fw-bold">Standard Fee (₱)</label>
+                <input type="number" step="0.01" name="fee" value="0.00" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-white text-uppercase fw-bold">Education Level</label>
+                <select name="education_level" class="form-select" required>
+                    <option value="All">All Levels</option>
+                    <option value="Elementary">Elementary</option>
+                    <option value="High School">High School</option>
+                    <option value="Senior High School">Senior High School</option>
+                    <option value="College">College</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-success w-100 py-2">Add</button>
+            </div>
+        </div>
+    </form>
+
+    {% set levels = ['All', 'Elementary', 'High School', 'Senior High School', 'College'] %}
+    {% set level_labels = {'All': 'All Levels', 'Elementary': 'Elementary', 'High School': 'High School', 'Senior High School': 'Senior High School', 'College': 'College'} %}
+    {% set level_colors = {'All': 'bg-secondary', 'Elementary': 'bg-success', 'High School': 'bg-primary', 'Senior High School': 'bg-warning text-dark', 'College': 'bg-info text-dark'} %}
+
+    {% for level in levels %}
+        {% set filtered = documents | selectattr('education_level', 'equalto', level) | list %}
+        {% if filtered %}
+        <h4 class="mt-4 mb-3">
+            <span class="badge {{ level_colors[level] }} me-2">{{ level_labels[level] }}</span>
+            <small class="text-muted">({{ filtered|length }} document{{ 's' if filtered|length > 1 else '' }})</small>
+        </h4>
+        <div class="table-responsive mb-4">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Document Name</th>
+                        <th>Education Level</th>
+                        <th>Current Fee</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in filtered %}
+                    <tr>
+                        <td>{{ doc.id }}</td>
+                        <td class="fw-bold">{{ doc.doc_name }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin.admin', menu_type='manage_docs') }}" class="d-flex align-items-center">
+                                <input type="hidden" name="action" value="update_level">
+                                <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                                <select name="new_level" class="form-select form-select-sm me-2" style="width: 160px;">
+                                    <option value="All" {% if doc.education_level == 'All' %}selected{% endif %}>All Levels</option>
+                                    <option value="Elementary" {% if doc.education_level == 'Elementary' %}selected{% endif %}>Elementary</option>
+                                    <option value="High School" {% if doc.education_level == 'High School' %}selected{% endif %}>High School</option>
+                                    <option value="Senior High School" {% if doc.education_level == 'Senior High School' %}selected{% endif %}>Senior High School</option>
+                                    <option value="College" {% if doc.education_level == 'College' %}selected{% endif %}>College</option>
+                                </select>
+                                <button type="submit" class="btn btn-info btn-sm">Save</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin.admin', menu_type='manage_docs') }}" class="d-flex align-items-center">
+                                <input type="hidden" name="action" value="update_fee">
+                                <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                                <input type="number" step="0.01" name="new_fee" value="{{ '%.2f'|format(doc.fee) }}" class="form-control form-control-sm me-2" style="width: 100px;">
+                                <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin.admin', menu_type='manage_docs') }}">
+                                <input type="hidden" name="action" value="delete_doc">
+                                <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete {{ doc.doc_name }}?');">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<script>
+(function () {
+    const tableCard = document.getElementById('requestsTableCard');
+    if (!tableCard) return;
+    const tbody = document.getElementById('requestsTbody');
+    const countBadge = document.getElementById('tableCountBadge');
+    let busy = false;
+
+    async function refreshTable() {
+        if (busy) return;
+        const active = document.activeElement;
+        if (active && tableCard.contains(active) &&
+            ['SELECT','INPUT','TEXTAREA'].includes(active.tagName)) return;
+        const modal = document.getElementById('rejectModal');
+        if (modal && modal.classList.contains('show')) return;
+        busy = true;
+        try {
+            const res = await fetch(window.location.href, {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!res.ok) return;
+            const html = await res.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const newTbody = doc.getElementById('requestsTbody');
+            const newBadge = doc.getElementById('tableCountBadge');
+            if (newTbody && tbody) tbody.innerHTML = newTbody.innerHTML;
+            if (newBadge && countBadge) countBadge.textContent = newBadge.textContent;
+        } catch (e) {
+            console.error('Table refresh error:', e);
+        } finally {
+            busy = false;
+        }
+    }
+
+    setInterval(refreshTable, 8000);
+})();
+
+let activeRequestId = null;
+
+function handleStatusSelection(select, reqId) {
+    const fileContainer = document.getElementById('fileContainer' + reqId);
+    const pickupContainer = document.getElementById('pickupMsgContainer' + reqId);
+    
+    // Logic para sa Rejection Modal
+    if (select.value === 'Rejected') {
+        activeRequestId = reqId;
+        var myModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+        myModal.show();
+        if(fileContainer) fileContainer.style.display = 'none';
+        if(pickupContainer) pickupContainer.style.display = 'none';
+    } 
+    // Logic para sa File Upload (Completed)
+    else if (select.value === 'Completed') {
+        if(fileContainer) {
+            fileContainer.style.display = 'block';
+            fileContainer.querySelector('input').setAttribute('required', 'required');
+        }
+        if(pickupContainer) pickupContainer.style.display = 'none';
+    } 
+    // Logic para sa Ready for pickup message
+    else if (select.value === 'Ready for pickup' || select.value === 'Ready for delivery') {
+        if(pickupContainer) pickupContainer.style.display = 'block';
+        if(fileContainer) {
+            fileContainer.style.display = 'none';
+            fileContainer.querySelector('input').removeAttribute('required');
+        }
+    }
+    // Reset fields if other status is selected
+    else {
+        if(pickupContainer) pickupContainer.style.display = 'none';
+        if(fileContainer) {
+            fileContainer.style.display = 'none';
+            fileContainer.querySelector('input').removeAttribute('required');
+        }
+    }
+}
+
+// Auto-build pickup_message from Date + Time + Office fields on input
+document.addEventListener('input', function(e) {
+    const el = e.target;
+    const reqId = el.dataset && el.dataset.reqid;
+    if (!reqId) return;
+    if (!el.classList.contains('pickup-date') && !el.classList.contains('pickup-time') && !el.classList.contains('pickup-office')) return;
+    const container = document.getElementById('pickupMsgContainer' + reqId);
+    if (!container) return;
+    const dateVal = container.querySelector('.pickup-date').value;
+    const timeVal = container.querySelector('.pickup-time').value;
+    const officeVal = container.querySelector('.pickup-office').value;
+    let parts = [];
+    if (dateVal) parts.push('Date: ' + dateVal);
+    if (timeVal) parts.push('Time: ' + timeVal);
+    if (officeVal) parts.push('Office: ' + officeVal);
+    const hidden = document.getElementById('pickupMsgInput' + reqId);
+    if (hidden) hidden.value = parts.join(' | ');
+});
+
+function confirmReject() {
+    const reasonText = document.getElementById('modalReasonText').value;
+    if (!reasonText.trim()) { alert("Paki-lagay ang dahilan."); return; }
+    
+    const hiddenReasonInput = document.getElementById('reasonInput' + activeRequestId);
+    const targetForm = document.getElementById('statusForm' + activeRequestId);
+    
+    if (hiddenReasonInput && targetForm) {
+        hiddenReasonInput.value = reasonText;
+        targetForm.submit();
+    }
+}
+</script>
+{% endblock %}

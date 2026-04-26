@@ -1,0 +1,204 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<style>
+    /* Messages Dashboard Specific Styles */
+    .message-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .table thead th {
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--accent);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 18px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table tbody td {
+        padding: 18px;
+        color: #000;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .message-text {
+        word-break: break-word;
+        white-space: pre-wrap;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #000;
+        max-width: 400px;
+    }
+
+    .badge-new {
+        background: rgba(255, 193, 7, 0.15);
+        color: #ffc107;
+        border: 1px solid #ffc107;
+        font-size: 10px;
+        text-transform: uppercase;
+        padding: 5px 10px;
+    }
+
+    .badge-read {
+        background: rgba(0, 0, 0, 0.05);
+        color: black;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        font-size: 10px;
+        text-transform: uppercase;
+        padding: 5px 10px;
+    }
+
+    .btn-delete {
+        color: #ff4d4d;
+        background: rgba(255, 77, 77, 0.1);
+        border: 1px solid rgba(255, 77, 77, 0.2);
+        transition: 0.3s;
+    }
+    .btn-delete:hover {
+        background: #ff4d4d;
+        color: white;
+    }
+
+    .btn-reply {
+        color: #2cc5ad;
+        background: rgba(44, 197, 173, 0.1);
+        border: 1px solid rgba(44, 197, 173, 0.2);
+        transition: 0.3s;
+    }
+    .btn-reply:hover {
+        background: #2cc5ad;
+        color: white;
+    }
+
+    .sender-name { font-size: 15px; font-weight: 600; color: #000; }
+    .sender-email { font-size: 12px; color: #555; }
+</style>
+
+<div class="container-fluid px-4 mt-4">
+    <div class="page-header">
+        <div>
+            <h2 class="h3 mb-1 fw-bold text-black">
+                <i class="bi bi-chat-left-text-fill me-2" style="color: var(--accent);"></i>Student Messages
+            </h2>
+            <p class="text-black small mb-0">Inquiries and concerns sent via the student contact form.</p>
+        </div>
+        <span class="badge rounded-pill px-3 py-2" style="background: rgba(44, 197, 173, 0.1); color: var(--accent); border: 1px solid var(--accent);">
+            {{ messages|length }} Total Messages
+        </span>
+    </div>
+
+    <div class="message-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Sender Information</th>
+                        <th>Message Content</th>
+                        <th>Date & Time</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in messages %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="sender-name">
+                                {{ m['firstname'] }} {{ m['lastname'] if m['firstname'] else 'Anonymous Student' }}
+                            </div>
+                            <div class="sender-email">
+                                <i class="bi bi-envelope-at me-1"></i>{{ m['email'] }}
+                            </div>
+                        </td>
+                        <td><div class="message-text">{{ m['message_text'] }}</div></td>
+                        <td>
+                            <div class="small text-black">
+                                <i class="bi bi-calendar3 me-2" style="color: var(--accent);"></i>
+                                {{ m['submitted_at'].strftime('%b %d, %Y') if m['submitted_at'] else 'N/A' }}
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% if m['is_read'] == 0 %}
+                                <span class="badge badge-new">New</span>
+                            {% else %}
+                                <span class="badge badge-read">Read</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                    <button type="button" class="btn btn-sm btn-reply p-2" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#replyModal"
+                                       onclick="setReplyData('{{ m.email }}', '{{ m.firstname }}', String.raw`{{ m.message_text }}`)">
+                                      <i class="bi bi-reply-fill"></i>
+                                    </button>
+                                <form action="{{ url_for('admin.delete_message', message_id=m['id']) }}" method="POST" 
+                                      onsubmit="return confirm('Delete this message permanently?');">
+                                    <button type="submit" class="btn btn-sm btn-delete p-2">
+                                        <i class="bi bi-trash3-fill"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="replyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <form action="{{ url_for('admin.reply_message') }}" method="POST">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="bi bi-chat-dots-fill text-accent me-2"></i>Reply to Student</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-info">To:</label>
+                        <input type="text" name="recipient_email" id="modal_email" class="form-control bg-dark text-white border-secondary" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small opacity-75">Student's Original Message:</label>
+                        <blockquote id="modal_orig_msg" class="p-2 border-start border-accent" style="font-size: 13px; background: rgba(255,255,255,0.05);"></blockquote>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Your Response:</label>
+                        <textarea name="admin_reply" class="form-control bg-dark text-white border-secondary" rows="5" required placeholder="Type your answer here..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-modal="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" style="background: var(--accent); color: #000; border: none;">
+                        <i class="bi bi-send-fill me-1"></i> Send Reply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setReplyData(email, name, message) {
+        document.getElementById('modal_email').value = email;
+        document.getElementById('modal_orig_msg').innerText = message;
+    }
+</script>
+{% endblock %}

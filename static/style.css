@@ -1,0 +1,138 @@
+
+
+h2 {
+    text-align: center;
+    color: #333;
+}
+
+form label {
+    display: block;
+    margin-top: 1em;
+    color: #555;
+}
+
+ 
+
+form input, form textarea, form button {
+    width: 100%;
+    padding: 0.8em;
+    margin-top: 0.5em;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+form button {
+    background-color: rgb(150, 0, 0);
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-top: 1.5em;
+    font-size: 1em;
+}
+
+form button:hover {
+    background-color: #004900;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2em;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th, td {
+    padding: 1em;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+/* ======================================= */
+/* ADMIN SPECIFIC STYLES (Based on previous admin.html) */
+/* ======================================= */
+.admin-top-bar {
+    background-color: #1a237e; /* Dark Blue */
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.admin-top-bar h1 { margin: 0; font-size: 1.5em; }
+.admin-top-bar .logout-link a { color: #c5cae9; text-decoration: none; font-weight: bold; }
+.admin-top-bar .logout-link a:hover { color: #ffffff; }
+
+.admin-main-wrapper {
+    display: flex;
+    min-height: calc(100vh - 56px); /* Adjusted height for top bar */
+}
+
+/* Admin Sidebar */
+.admin-sidebar {
+    width: 250px;
+    background-color: #3949ab; /* Medium Blue */
+    color: white;
+    padding-top: 20px;
+    flex-shrink: 0;
+}
+.admin-sidebar h3 {
+    margin: 0 0 10px 0;
+    padding: 0 20px;
+    font-size: 1.1em;
+    color: #c5cae9;
+}
+.admin-sidebar-menu a {
+    display: block;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #ffffff;
+    border-left: 5px solid transparent;
+    transition: all 0.2s;
+    font-size: 0.95em;
+}
+.admin-sidebar-menu a:hover, .admin-sidebar-menu a.active {
+    background-color: #4b62d8; /* Lighter blue on hover/active */
+    border-left-color: #ffeb3b; /* Yellow accent */
+    font-weight: bold;
+}
+
+/* Admin Content Area */
+.admin-content {
+    flex-grow: 1;
+    padding: 30px;
+    background-color: #f4f7f6;
+}
+
+.admin-content h2 { color: #1a237e; }
+
+/* Status Tags (Make sure these are still in your CSS) */
+/* .status-Pending, .status-Review, etc. */
+/* ADD TO CSS FOR ADMIN SIDEBAR */
+.admin-sidebar-menu h3 { 
+    margin-top: 20px; 
+    padding: 0 0 0 20px; 
+    font-size: 1.1em; 
+    color: #c5cae9; 
+}
+.admin-sidebar-menu .sub-link {
+    padding: 8px 20px 8px 35px; /* Indentation */
+    font-size: 0.9em;
+    color: #e0e0e0;
+    border-left: none;
+}
+.admin-sidebar-menu .sub-link:hover, .admin-sidebar-menu .sub-link.active {
+    background-color: #4b62d8;
+    color: #ffffff;
+    border-left: 5px solid #ffeb3b; 
+}

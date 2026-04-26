@@ -1,0 +1,173 @@
+import pymysql
+from pymysql.cursors import DictCursor
+from werkzeug.security import generate_password_hash
+from config import Config
+
+# Get the config from the Config class
+DB_CONFIG = Config.MYSQL_CONFIG
+
+def get_db_connection():
+    """Returns a MySQL connection object."""
+    try:
+        conn = pymysql.connect(
+            **DB_CONFIG,
+            cursorclass=DictCursor,
+            autocommit=False,
+        )
+        return conn
+    except Exception as e:
+        print(f"ERROR: Unable to connect to MySQL database: {e}")
+        return None
+
+def execute_query(query, params=None, fetch_one=False, fetch_all=False):
+    """Generic function to execute a query and fetch data (if needed)."""
+    conn = get_db_connection()
+    if conn is None: return None
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+
+            if fetch_one:
+                return cur.fetchone()
+            if fetch_all:
+                return cur.fetchall()
+
+            conn.commit()
+            return True
+            
+    except Exception as e:
+        print(f"Database Query Error: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+def create_tables():
+    """Creates all tables in PostgreSQL, including the default Super Admin."""
+    queries = [
+        '''
+        CREATE TABLE IF NOT EXISTS admin_users (
+            id SERIAL PRIMARY KEY,
+            fullname TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role_access TEXT NOT NULL, 
+            date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            status TEXT DEFAULT 'Active'
+        )
+        ''',
+        # ... (Other table definitions remain UNCHANGED)
+        '''
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            status TEXT DEFAULT 'Active',
+            role TEXT DEFAULT 'student',
+            date_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        ''',
+        '''
+        CREATE TABLE IF NOT EXISTS requests (
+            id SERIAL PRIMARY KEY,
+            requester_email TEXT NOT NULL,
+            lastname TEXT,
+            firstname TEXT,
+            email TEXT NOT NULL,
+            student_id TEXT,
+            contact TEXT,
+            birthdate TEXT,
+            status TEXT DEFAULT 'Pending' NOT NULL,  
+            course_grade TEXT,
+            year_entry TEXT,
+            last_school TEXT,
+            purpose TEXT,
+            address TEXT,
+            document TEXT,                                        
+            final_price NUMERIC(10, 2) DEFAULT 0.0,               
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            delivery_method TEXT DEFAULT 'Pick-up'
+        )
+        ''',
+        '''
+        CREATE TABLE IF NOT EXISTS student_info (
+            requester_email TEXT PRIMARY KEY,
+            lastname TEXT,
+            firstname TEXT,
+            middlename TEXT,
+            suffix TEXT,              
+            age INTEGER,
+            contact TEXT,
+            birthdate DATE,         
+            enrollment_status TEXT,   
+            course_grade TEXT,        
+            student_id TEXT,          
+            address TEXT,             
+            FOREIGN KEY(requester_email) REFERENCES users(email)
+        )
+        ''',
+        '''
+        CREATE TABLE IF NOT EXISTS document_types (
+            id SERIAL PRIMARY KEY,
+            doc_name TEXT UNIQUE NOT NULL,
+            fee NUMERIC(10, 2) DEFAULT 0.0
+        )
+        '''
+        ,
+        # Sa loob ng db.py (queries list)
+       '''
+CREATE TABLE IF NOT EXISTS payments (
+    id SERIAL PRIMARY KEY,
+    request_id INTEGER UNIQUE NOT NULL, 
+    reference_no TEXT NOT NULL,
+    amount_paid NUMERIC(10, 2) NOT NULL,
+    proof_image TEXT NOT NULL,
+    payment_status TEXT DEFAULT 'Pending Verification',
+    date_uploaded TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE
+)
+'''
+,
+        """
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    message TEXT NOT NULL,
+    category VARCHAR(50), 
+    is_read SMALLINT DEFAULT 0, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""",
+"""
+        CREATE TABLE IF NOT EXISTS student_messages (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            message_text TEXT NOT NULL,
+            is_read INTEGER DEFAULT 0,
+            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """,
+    ]
+
+    conn = get_db_connection()
+    if conn is None: return
+    try:
+        cur = conn.cursor()
+        for query in queries:
+            cur.execute(query)
+        conn.commit()
+    except Exception as e:
+        print(f"Error during table creation: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+    
+    # Default Super Admin creation
+    default_email = 'superadmin@thesis.com'
+    admin_exists = execute_query("SELECT id FROM admin_users WHERE email = %s", (default_email,), fetch_one=True)
+    
+    if not admin_exists:
+        default_password = generate_password_hash('admire_25.')
+        insert_admin_query = "INSERT INTO admin_users (fullname, email, password_hash, role_access) VALUES (%s, %s, %s, %s)"
+        execute_query(insert_admin_query, ('Super Admin', default_email, default_password, 'Super Admin'))
+        print("\n!!! DEFAULT SUPER ADMIN CREATED: email=superadmin@thesis.com, password=admire_25. !!!\n")

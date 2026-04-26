@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>St. Clare Document Request System | Student Portal</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/scclogo.svg') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+   
+
+    <style>
+        /* --- Base and Background --- */
+
+        
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden; 
+            background-color: #a71d2a; 
+            min-height: 100vh;
+            position: relative;
+            color: #fff; 
+        }
+
+        /* --- Background Shapes (Dark/Red Gradient) --- */
+        .bg-wrapper {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            /* Black to Deep Red Gradient for St. Clare Theme */
+            background: linear-gradient(135deg, #c4dcf3 0%, #ededee 100%); 
+        }
+        .shape { position: absolute; border-radius: 50%; }
+        .shape-1 { width: 120vh; height: 120vh; background-color: rgba(255, 255, 255, 0.1); top: -50vh; left: -20vh; }
+        .shape-2 { width: 100vh; height: 100vh; background-color: rgba(0, 0, 0, 0.1); bottom: -40vh; right: -20vh; }
+        .shape-3 { width: 80vh; height: 80vh; background-color: rgba(255, 255, 255, 0.05); top: 10vh; right: -30vh; }
+        .shape-4 { width: 150vw; height: 100vh; background: radial-gradient(circle at 50% 100%, rgba(255,255,255,0.1) 0%, transparent 60%); bottom: 0; left: -25vw; }
+
+
+        /* --- Navbar Styling --- */
+        .navbar {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            background-color: rgba(0, 63, 251, 0.6); 
+            box-shadow: 0 4px 10px rgba(36, 44, 94, 0.5);
+        }
+        .navbar-brand {
+            color: white !important;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        /* --- Logout Button Style --- */
+        .logout-btn {
+            border: 2px solid #0dcaf0;
+            color: #0dcaf0;
+            font-weight: 600;
+            border-radius: 50px;
+            padding: 8px 25px;
+            transition: all 0.3s ease;
+        }
+        .logout-btn:hover {
+            background-color: #3253f7;
+            color: white;
+            box-shadow: 0 4px 10px rgba(21, 24, 202, 0.5);
+        }
+
+        /* --- Dashboard Layout & Content Card (Main White Box) --- */
+        .dashboard-wrapper {
+            padding-top: 7rem; 
+            padding-bottom: 3rem;
+        }
+        
+        .content-card {
+            background-color: rgba(255, 255, 255, 0.95); /* Near opaque white */
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            color: #333; /* Dark text for content */
+        }
+        
+        /* --- Action Card (For Dashboard Links) --- */
+        .action-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 12px;
+            padding: 2rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(82, 100, 216, 0.2);
+            height: 100%;
+        }
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(5, 61, 215, 0.3);
+        }
+        .card-icon { font-size: 3rem; color: #0dcaf0; margin-bottom: 1rem; }
+        .card-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: rgb(14, 14, 14); }
+        .card-text { font-size: 0.85rem; opacity: 0.7; margin-bottom: 1.5rem; color: rgb(0, 0, 0); }
+        .card-btn { background-color: #0dcaf0; border: none; color: rgb(11, 11, 11); font-weight: 600; border-radius: 50px; padding: 10px 30px; transition: background 0.3s; }
+        .card-btn:hover { background-color: #3253f7; color: white; }
+        
+        /* --- Status Summary Bar (Top of Dashboard) --- */
+        .status-summary-bar {
+            background-color: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 20px rgba(50, 74, 80, 0.4);
+            color: rgb(9, 9, 9);
+        }
+        .status-summary-bar .greeting { font-size: 2.5rem; font-weight: 300; }
+        .status-summary-bar .greeting .name { font-weight: 700; color: #0dcaf0; }
+        .stat-icon { font-size: 1.5rem; }
+
+        /* --- Custom Table Styling (For history, payment, etc.) --- */
+        .table thead {
+            background-color: #000000;
+            color: white;
+        }
+        .table th {
+            border-bottom: 2px solid #0dcaf0;
+        }
+        .table-striped > tbody > tr:nth-of-type(odd) > * {
+            background-color: rgba(239, 71, 58, 0.05); /* Very light red stripe */
+        }
+        
+        /* --- Custom Status Tags --- */
+        .status-Pending { background-color: #ffc107; color: #333; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85em; }
+        .status-Approved { background-color: #00bcd4; color: white; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85em; }
+        .status-Rejected { background-color: #ef473a; color: white; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85em; }
+        .status-Completed { background-color: #4caf50; color: white; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85em; }
+        .status-Accepted { background-color: #ffc107; color: #333; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85em; } /* Reused for UNPAID */
+        .status-Processing { background-color: #3460c7; color: white; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-wrapper">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid mx-4">
+            <a class="navbar-brand" href="{{ url_for('user.dashboard') }}">
+                 <i class="fas fa-file-invoice me-2 text-info"></i> St. Clare Document Portal
+            </a>
+            
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3 d-none d-md-inline"> <strong>{{ current_user }}</strong></span>
+                <form action="{{ url_for('user.logout') }}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-outline-info logout-btn">
+                        <i class="fas fa-sign-out-alt me-1"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container dashboard-wrapper">
+        <div class="row g-4">
+            
+            <div class="col-lg-12">
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages mb-4">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category|replace('error', 'danger')|replace('message', 'info') }}" role="alert">
+                              {{ message }}
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+                
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

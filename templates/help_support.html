@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-card">
+
+    <div class="content-header d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-question-circle me-2"></i>Help & Support / FAQ</h2>
+    </div>
+    
+
+    <div class="content-body">
+        
+        <h3 class="mt-4">Frequently Asked Questions (FAQ)</h3>
+        
+        <div class="faq-section p-3 mb-3 border rounded">
+            <h4>1. How do I re-request a document?</h4>
+            <p class="mb-0">Go to the **New Request** section, fill in all the required information, and submit the request.</p>
+        </div>
+
+        <div class="faq-section p-3 mb-3 border rounded">
+            <h4>2. How much will I pay?</h4>
+            <p class="mb-0">Once your request is approved and the final price has been set by the Admin, you will see what you will pay in the **Payments** section.</p>
+        </div>
+
+        <div class="faq-section p-3 mb-3 border rounded">
+            <h4>3. How long will it take for me to get the document?</h4>
+            <p class="mb-0">Depending on the document type and current workload. You can track the status in **My Requests** section. You will also receive an email notification for every status update.</p>
+        </div>
+
+         <form action="{{ url_for('user.submit_message') }}" method="POST">
+            <div class="mb-3">
+              <label class="form-label">How can we help you?</label>
+              <textarea name="message_content" class="form-control" rows="4" required></textarea>
+            </div>
+             <button type="submit" class="btn btn-info"><i class="fa-light fa-paper-plane me-2"></i>Send Message</button>
+         </form>
+
+
+        
+    </div>
+
+    <a href="{{ url_for('user.dashboard') }}" class="btn btn-info w-10  mt-2 small ">
+         <i class="fa-solid fa-house me-2"></i> Back to Home
+    </a>
+
+</div>
+{% endblock %}
