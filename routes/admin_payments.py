@@ -100,7 +100,7 @@ def manage_payments(status):
         base_query = base_query.replace("WHERE p.payment_status = %s", "WHERE p.payment_status = %s AND r.assigned_admin_id = %s")
         payments = execute_query(base_query, (db_status, admin_id), fetch_all=True)
 
-    return render_template('admin_paymentverify.html', payments=payments, current_status=status)
+    return render_template('admin_paymentverify.html', payments=payments or [], current_status=status)
 
 @admin_pay_bp.route('/admin/approve/<int:pay_id>/<int:req_id>')
 @admin_login_required
