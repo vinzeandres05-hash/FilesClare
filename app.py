@@ -334,7 +334,7 @@ try:
         
         for col_name, col_type in columns_to_fix:
             try:
-                execute_query(f"ALTER TABLE requests ADD COLUMN IF NOT EXISTS {col_name} {col_type};")
+                execute_query(f"ALTER TABLE requests ADD COLUMN {col_name} {col_type};")
                 execute_query(f"ALTER TABLE requests MODIFY COLUMN {col_name} {col_type};")
                 print(f"Fixed/Synced column: {col_name}")
             except Exception as e:
@@ -343,7 +343,7 @@ try:
         # 3. Ensure notifications schema supports role-scoped admin visibility
         print("Synchronizing notifications table columns...")
         try:
-            execute_query("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS admin_id INT NULL;")
+            execute_query("ALTER TABLE notifications ADD COLUMN admin_id INT NULL;")
             print("Fixed/Synced column: notifications.admin_id")
         except Exception as e:
             print(f"Note for notifications (admin_id): {e}")

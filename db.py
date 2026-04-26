@@ -183,25 +183,31 @@ def create_tables():
     
     # Migrate existing databases: add new columns if they don't exist
     migration_queries = [
-        "ALTER TABLE student_info ADD COLUMN IF NOT EXISTS education_level VARCHAR(255) AFTER enrollment_status",
-        "ALTER TABLE student_info ADD COLUMN IF NOT EXISTS track VARCHAR(100) AFTER education_level",
-        "ALTER TABLE requests ADD COLUMN IF NOT EXISTS document_file_path VARCHAR(500) NULL",
-        "ALTER TABLE requests ADD COLUMN IF NOT EXISTS verification_token VARCHAR(64) NULL",
-        "ALTER TABLE requests ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL",
-        "ALTER TABLE student_info ADD COLUMN IF NOT EXISTS gender VARCHAR(255) AFTER suffix",
-        "ALTER TABLE document_types ADD COLUMN IF NOT EXISTS education_level VARCHAR(255) DEFAULT 'All'",
-        "ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_method VARCHAR(100) DEFAULT NULL",
+        "ALTER TABLE student_info ADD COLUMN education_level VARCHAR(255) AFTER enrollment_status",
+        "ALTER TABLE student_info ADD COLUMN track VARCHAR(100) AFTER education_level",
+        "ALTER TABLE requests ADD COLUMN document_file_path VARCHAR(500) NULL",
+        "ALTER TABLE requests ADD COLUMN verification_token VARCHAR(64) NULL",
+        "ALTER TABLE requests ADD COLUMN rejection_reason TEXT NULL",
+        "ALTER TABLE student_info ADD COLUMN gender VARCHAR(255) AFTER suffix",
+        "ALTER TABLE document_types ADD COLUMN education_level VARCHAR(255) DEFAULT 'All'",
+        "ALTER TABLE payments ADD COLUMN payment_method VARCHAR(100) DEFAULT NULL",
     ]
     conn2 = get_db_connection()
     if conn2:
         try:
             cur2 = conn2.cursor()
             for mq in migration_queries:
-                cur2.execute(mq)
-            conn2.commit()
+                try:
+                    cur2.execute(mq)
+                    conn2.commit()
+                except Exception as col_e:
+                    conn2.rollback()
+                    if 'Duplicate column' in str(col_e):
+                        pass  # Column already exists, skip
+                    else:
+                        print(f"Migration warning: {col_e}")
         except Exception as e:
-            print(f"Migration warning: {e}")
-            conn2.rollback()
+            print(f"Migration error: {e}")
         finally:
             conn2.close()
 
