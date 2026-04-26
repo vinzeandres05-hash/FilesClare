@@ -117,7 +117,7 @@
                         </td>
                         <td>
                             {% if p.proof_image == 'paymongo_verified.png' %}
-                            {% set method_map = {'qrph': 'QR Ph (GCash/Maya)', 'gcash': 'GCash', 'grab_pay': 'GrabPay', 'card': 'Credit/Debit Card', 'maya': 'Maya', 'paymaya': 'Maya', 'billease': 'BillEase', 'dob': 'Direct Online Banking', 'dob_ubp': 'UnionBank'} %}
+                            {% set method_map = {'gcash': 'GCash', 'maya': 'Maya', 'qrph': 'QR Ph', 'grab_pay': 'GrabPay', 'card': 'Credit/Debit Card', 'paymaya': 'Maya', 'billease': 'BillEase', 'dob': 'Direct Online Banking', 'unionbank': 'UnionBank', 'bpi': 'BPI', 'rcbc': 'RCBC'} %}
                             <span class="badge bg-success text-white">
                                 <i class="fas fa-credit-card me-1"></i> {{ method_map.get(p.payment_method, p.payment_method|default('Online', true)|replace('_', ' ')|title) }}
                             </span>

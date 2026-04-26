@@ -124,22 +124,41 @@ def paymongo_webhook():
             # Extract payment method (e.g. gcash, grab_pay, card, qrph, maya)
             payment_method = None
             try:
-                # Path 1: checkout_session events have payment_method_used directly
-                payment_method = attr.get('payment_method_used', None)
+                # Map bank institution codes to specific e-wallet apps
+                BANK_CODE_MAP = {
+                    'PAPHPHM1XXX': 'maya',
+                    'GCSHPHM2XXX': 'gcash',
+                    'GABORPH1XXX': 'gcash',
+                    'UBPHPHMMXXX': 'unionbank',
+                    'BABORPH1XXX': 'bpi',
+                    'ABORPH21XXX': 'rcbc',
+                }
                 
-                # Path 2: payment events have source.type directly in attr
-                if not payment_method:
+                # Get source from all possible paths
+                source = {}
+                # Path 1: payment events have source directly in attr
+                if attr.get('source'):
                     source = attr.get('source', {})
-                    if source:
-                        payment_method = source.get('type', None)
-                
-                # Path 3: checkout_session payments array
-                if not payment_method:
+                # Path 2: checkout_session payments array
+                if not source:
                     payments_list = attr.get('payments', [])
                     if payments_list:
                         pm_attrs = payments_list[0].get('attributes', {})
                         source = pm_attrs.get('source', {})
-                        payment_method = source.get('type', None)
+                
+                # Get base type (e.g. qrph, gcash, card)
+                payment_method = source.get('type', None)
+                
+                # For QR Ph, check bank_institution_code to identify specific app
+                if payment_method == 'qrph' and source.get('provider'):
+                    bank_code = source['provider'].get('bank_institution_code', '')
+                    print(f"DEBUG WEBHOOK: bank_institution_code = {bank_code}")
+                    if bank_code in BANK_CODE_MAP:
+                        payment_method = BANK_CODE_MAP[bank_code]
+                
+                # Fallback: checkout_session level payment_method_used
+                if not payment_method:
+                    payment_method = attr.get('payment_method_used', None)
                 
                 print(f"DEBUG WEBHOOK: payment_method = {payment_method}")
             except Exception as pm_e:
