@@ -387,20 +387,15 @@
                 <span id="badge_completed" class="badge rounded-pill bg-secondary ms-auto d-none">0</span>
             </a>
 
-            <h3>Payments</h3>
-                <a href="{{ url_for('admin_payment.manage_payments', status='pending') }}" 
-                   class="sub-link {{ 'active' if current_status == 'pending' else '' }}">
-                   <i class="bi bi-credit-card-fill"></i> Pending Verification
-                   <span id="paymentNotifBadge" class="badge rounded-pill bg-warning text-dark ms-auto {% if notif_count == 0 %}d-none{% endif %}">{{ notif_count }}</span>
-                </a>
-                <a href="{{ url_for('admin_payment.manage_payments', status='verified') }}" 
-                   class="sub-link {{ 'active' if current_status == 'verified' else '' }}">
-                   <i class="bi bi-patch-check-fill"></i> Approved Proof
-                </a>
-                <a href="{{ url_for('admin_payment.manage_payments', status='rejected') }}" 
-                   class="sub-link {{ 'active' if current_status == 'rejected' else '' }}">
-                   <i class="bi bi-patch-exclamation-fill"></i> Rejected Proof
-                </a>
+           <h3>Payments</h3>
+                     <a href="{{ url_for('admin_payment.manage_payments', status='paymongo') }}" 
+                         class="sub-link {{ 'active' if current_status == 'paymongo' else '' }}">
+                         <i class="fab fa-paypal"></i> Paid Transactions
+                     </a>
+                     <a href="{{ url_for('admin_payment.manage_payments', status='verified') }}" 
+                         class="sub-link {{ 'active' if current_status == 'verified' else '' }}">
+                         <i class="bi bi-check-circle-fill"></i> Paid Transactions
+                     </a>
 
             <h3>Administration</h3>
             

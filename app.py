@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv(override=True)
-from flask import Flask
+from flask import Flask, request, jsonify
 import requests
 import os 
 from db import create_tables, execute_query
@@ -36,6 +36,128 @@ print(f"DEBUG: Secret Key is {app.config.get('SECRET_KEY')}")
 # =========================================================
 # GLOBAL CONTEXT PROCESSOR (Para sa Sidebar Badges)
 # =========================================================
+
+# =========================================================
+# webhook para sa PayMongo payment verification
+# =========================================================
+
+import re  # Siguraduhin na nasa taas ito para sa Regex
+
+def send_payment_verified_email(student_email, student_name, request_id, document_name):
+    """
+    Dedicated function to send the 'Processing' email after PayMongo payment.
+    """
+    import requests as py_requests
+    from flask import current_app
+
+    url = "https://api.brevo.com/v3/smtp/email"
+    api_key = current_app.config.get('BREVO_API_KEY')
+    
+    payload = {
+        "sender": {
+            "name": current_app.config.get('BREVO_SENDER_NAME'), 
+            "email": current_app.config.get('BREVO_SENDER_EMAIL')
+        },
+        "to": [{"email": student_email}],
+        "subject": f"PAYMENT VERIFIED: Request #{request_id}",
+        "htmlContent": f"""
+        <html>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+            <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e0e0e0;">
+                <div style="background-color: #3498db; padding: 30px; text-align: center; color: #ffffff;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">⚙️</div>
+                    <h2 style="margin: 0; text-transform: uppercase; letter-spacing: 2px;">Payment Verified</h2>
+                </div>
+                <div style="padding: 30px; color: #333; line-height: 1.6;">
+                    <p style="font-size: 18px; font-weight: bold;">Hello, {student_name}!</p>
+                    <p>Good news! Your payment for <b>{document_name}</b> (ID: #{request_id}) has been successfully verified via PayMongo.</p>
+                    
+                    <div style="background-color: #e8f4fd; border-left: 5px solid #3498db; padding: 20px; margin: 20px 0; border-radius: 4px;">
+                        <p style="margin: 0; color: #2c3e50;">
+                            <b>Current Status:</b> Your document request is now <b>PROCESSING</b>.
+                        </p>
+                    </div>
+                    
+                    <p>Our team is now preparing your document. You will receive another notification once it is ready for pickup or delivery.</p>
+                    <p style="font-size: 13px; color: #888; margin-top: 30px; text-align: center;">
+                        This is an automated notification from CLAREFILES System.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+    }
+
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+
+    try:
+        response = py_requests.post(url, json=payload, headers=headers)
+        return response.status_code in [200, 201]
+    except Exception as e:
+        print(f"❌ Mail Error: {str(e)}")
+        return False
+
+@app.route('/webhook/paymongo', methods=['POST'])
+def paymongo_webhook():
+    data = request.get_json()
+    try:
+        attr = data.get('data', {}).get('attributes', {}).get('data', {}).get('attributes', {})
+        description = attr.get('description', '')
+        
+        # 1. Kunin ang Request ID
+        match = re.search(r'\(ID:\s*(\d+)\)', description)
+        if match:
+            req_id = match.group(1)
+            
+            # 2. Database Updates (Status and Payment Log)
+            execute_query("UPDATE requests SET status = 'Processing' WHERE id = %s", (req_id,))
+            
+            pay_ref = data.get('data', {}).get('id')
+            amt = float(attr.get('amount', 0)) / 100
+            execute_query("""
+                INSERT INTO payments (request_id, reference_no, amount_paid, proof_image, payment_status) 
+                VALUES (%s, %s, %s, 'paymongo_verified.png', 'PAID') 
+                ON DUPLICATE KEY UPDATE 
+                    reference_no = VALUES(reference_no),
+                    amount_paid = VALUES(amount_paid),
+                    proof_image = VALUES(proof_image),
+                    payment_status = VALUES(payment_status)
+            """, (req_id, pay_ref, amt))
+
+            # 3. Kumuha ng data para sa Email
+            student = execute_query(
+                "SELECT email, firstname, document FROM requests WHERE id = %s", 
+                (req_id,), fetch_one=True
+            )
+            
+            if student:
+                # TATAWAGIN NA NATIN YUNG BAGONG FUNCTION
+                success = send_payment_verified_email(
+                    student['email'], 
+                    student['firstname'], 
+                    req_id, 
+                    student['document']
+                )
+                
+                if success:
+                    print(f"✅ EMAIL SENT: Payment Verified (Processing) sent to {student['email']}")
+                else:
+                    print("❌ EMAIL FAILED: Check Brevo API or connection.")
+
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(f"🔥 ERROR: {str(e)}")
+        return jsonify({"status": "error"}), 500
+    
+# =========================================================
+# end of webhook
+# =========================================================
+
 @app.context_processor
 def inject_notifications():
     # STEP 1: Mag-set ng default values para KAHIT ANONG MANGYARI, may variable ang HTML

@@ -5,6 +5,7 @@ import random
 import time
 import os
 import requests
+import base64
 
 # Create Blueprint for User Routes
 user_bp = Blueprint('user', __name__, url_prefix='/')
@@ -464,6 +465,65 @@ def payment():
                            bills=billable_requests, 
                            total=total_bill, 
                            active_page='payment')
+
+#API Key for PayMongo 
+PAYMONGO_SECRET_KEY = os.getenv("PAYMONGO_SECRET_KEY") 
+
+@user_bp.route('/get-payment-link/<int:req_id>')
+def get_payment_link(req_id):
+    # 1. Kunin ang amount at document name sa DB
+    query = "SELECT document, final_price FROM requests WHERE id = %s"
+    row = execute_query(query, (req_id,), fetch_one=True)
+    
+    if not row:
+        return {"error": "Request not found"}, 404
+
+    # 2. PayMongo API Setup
+    url = "https://api.paymongo.com/v1/links"
+    
+    # Ang amount ay dapat centavos (PHP 100.00 = 10000)
+    amount_in_centavos = int(float(row['final_price']) * 100)
+    
+    payload = {
+        "data": {
+            "attributes": {
+                "amount": amount_in_centavos,
+                "description": f"Payment for {row['document']} (ID: {req_id})",
+                "remarks": str(req_id),
+                # ETO YUNG IDUDUGTONG MO:
+                "redirect": {
+                    "success": url_for('user.payment_success', _external=True),
+                    "failed": url_for('user.payment', _external=True)
+                }
+            }
+        }
+    }
+
+    # Auth Header (Secret Key)
+    auth_str = f"{PAYMONGO_SECRET_KEY}:"
+    encoded_auth = base64.b64encode(auth_str.encode()).decode()
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Basic {encoded_auth}"
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        data = response.json()
+        # I-return ang checkout URL sa frontend
+        return {"checkout_url": data['data']['attributes']['checkout_url']}
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@user_bp.route('/payment-success')
+def payment_success():
+    if 'user_email' not in session: 
+        return redirect(url_for('user.login'))
+    
+    flash("Payment successful! Your transaction has been processed.", "success")
+    return redirect(url_for('user.payment'))
 
 @user_bp.route('/help-support', endpoint='help_support')
 def help_support():

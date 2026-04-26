@@ -2,90 +2,102 @@
 
 {% block content %}
 <style>
-    .payment-card {
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 2px solid #f0f0f0 !important;
+    .payment-card-status {
+        border-radius: 12px;
+        transition: transform 0.2s;
+        border: 1px solid #eee !important;
     }
-    .payment-card:hover, .payment-card.selected {
-        border-color: #dc3545 !important;
-        background-color: #fff5f5;
+    .payment-card-status:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
-    .payment-card.selected::after {
-        content: '✓';
-        position: absolute;
-        top: 8px;
-        right: 12px;
-        color: #dc3545;
-        font-weight: bold;
+    .paymongo-btn {
+        background: linear-gradient(45deg, #dc3545, #ff4d5a);
+        border: none;
+        font-weight: 600;
+        transition: all 0.3s;
     }
-    .qr-box img {
-        width: 180px;
-        height: 180px;
-        border: 1px solid #ddd;
-        padding: 5px;
-        border-radius: 8px;
+    .paymongo-btn:hover {
+        background: linear-gradient(45deg, #b02a37, #dc3545);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
     }
-    .ref-number {
-        letter-spacing: 2px;
-        font-family: monospace;
-        background: #f8f9fa;
-        padding: 5px 10px;
-        border: 1px dashed #ccc;
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 5px 12px;
+        border-radius: 20px;
+    }
+    /* Loading Spinner Overlay */
+    #loadingOverlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255,255,255,0.8);
+        display: none;
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
     }
 </style>
 
-<div class="content-card">
+<div id="loadingOverlay">
+    <div class="spinner-border text-danger" role="status"></div>
+    <span class="mt-2 fw-bold text-dark">Redirecting to Secure Payment...</span>
+</div>
+
+<div class="content-card shadow-sm p-4 bg-white rounded">
     <div class="content-header d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-credit-card me-2"></i>Payment Summary</h2>
+        <h2 class="h4 mb-0"><i class="fas fa-credit-card me-2 text-danger"></i>Payment Summary</h2>
+        <div class="text-end">
+            <small class="text-muted d-block">Total Outstanding</small>
+            <span class="h5 fw-bold text-danger">₱ {{ "%.2f"|format(total) }}</span>
+        </div>
     </div>
     
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Req. ID</th>
-                    <th>Document</th>
-                    <th>Final Price</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th class="py-3">Req. ID</th>
+                    <th class="py-3">Document</th>
+                    <th class="py-3">Price</th>
+                    <th class="py-3">Status</th>
+                    <th class="py-3 text-center">Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for bill in bills %}
-                <tr>
-                    <td>#{{ bill.id }}</td>
+                <tr class="payment-card-status">
+                    <td class="fw-bold">#{{ bill.id }}</td>
                     <td>{{ bill.document }}</td>
-                    <td>₱ {{ "%.2f"|format(bill.final_price) }}</td>
+                    <td class="fw-semibold text-dark">₱ {{ "%.2f"|format(bill.final_price) }}</td>
                     
                     <td>
                         {% if bill.payment_status == 'PAID' %}
-                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> VERIFIED</span>
+                            <span class="status-badge bg-success-subtle text-success border border-success">
+                                <i class="fas fa-check-circle me-1"></i> VERIFIED
+                            </span>
                         {% elif bill.payment_status == 'Pending Verification' %}
-                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> PENDING VERIFICATION</span>
+                            <span class="status-badge bg-warning-subtle text-warning-emphasis border border-warning">
+                                <i class="fas fa-clock me-1"></i> PROCESSING
+                            </span>
                         {% elif bill.payment_status == 'REJECTED' %}
-                            <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i> RECEIPT REJECTED</span>
+                            <span class="status-badge bg-danger-subtle text-danger border border-danger">
+                                <i class="fas fa-times-circle me-1"></i> REJECTED
+                            </span>
                         {% else %}
-                            <span class="badge bg-secondary">UNPAID</span>
+                            <span class="status-badge bg-light text-muted border">UNPAID</span>
                         {% endif %}
                     </td>
 
-                    <td>
+                    <td class="text-center">
                         {% if bill.payment_status == 'PAID' %}
-                            <span class="text-success fw-bold small"><i class="fas fa-check"></i> Payment Complete</span>
+                            <span class="text-success fw-bold small"><i class="fas fa-check-double"></i> Payment Complete</span>
                         {% elif bill.payment_status == 'Pending Verification' %}
-                            <button class="btn btn-sm btn-secondary" disabled>Checking Proof...</button>
+                            <button class="btn btn-sm btn-outline-secondary" disabled>Verifying...</button>
                         {% else %}
-                            <button class="btn btn-sm btn-outline-danger" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#paymentModal" 
-                                    data-reqid="{{ bill.id }}" 
-                                    data-price="{{ '%.2f'|format(bill.final_price) }}">
-                                {% if bill.payment_status == 'REJECTED' %}
-                                    <i class="fas fa-redo me-1"></i> Re-select Method
-                                {% else %}
-                                    Select Payment Methods
-                                {% endif %}
+                            <button class="btn btn-sm paymongo-btn text-white px-3" 
+                                    onclick="payWithPayMongo('{{ bill.id }}')">
+                                <i class="fas fa-bolt me-1"></i> Pay via GCash/Maya
                             </button>
                         {% endif %}
                     </td>
@@ -95,107 +107,40 @@
         </table>
     </div>
 
-    <a href="{{ url_for('user.dashboard') }}" class="btn btn-info w-10  mt-2 small ">
-         <i class="fa-solid fa-house me-2"></i> Back to Home
-    </a>
-
-</div>
-
-<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            
-            <div id="step-1">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Select Payment Method</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-6 text-center">
-                            <div class="payment-card border rounded p-3 position-relative" onclick="setPayment('GCash', this)">
-                                <img src="{{ url_for('static', filename='images/gcash.png') }}" height="100">
-                                <p class="small mb-0 mt-2">GCash</p>
-                            </div>
-                        </div>
-                        <div class="col-6 text-center">
-                            <div class="payment-card border rounded p-3 position-relative" onclick="setPayment('Maya', this)">
-                                <img src="{{ url_for('static', filename='images/maya.jpg') }}" height="100">
-                                <p class="small mb-0 mt-2">Maya</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button id="btnProceed" class="btn btn-danger w-100 py-2 fw-bold" onclick="goToStep2()" disabled>Proceed</button>
-                </div>
-            </div>
-
-            <div id="step-2" style="display: none;">
-                <div class="modal-header border-0 pb-0">
-                    <button class="btn btn-sm text-muted" onclick="goToStep1()"><i class="fas fa-arrow-left"></i> Back</button>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center pt-0">
-                    <p class="mb-1 text-muted">Scan to pay via <span id="method-name" class="fw-bold"></span></p>
-                    <div class="qr-box my-3">
-                        <img id="qr-img" src="{{ url_for('static', filename='images/default_qr.png') }}" alt="QR Code">
-                    </div>
-                    <h3 class="fw-bold text-danger mb-1" id="final-amount">₱ 0.00</h3>
-                    <p class="small text-muted mb-3">Reference: <span id="ref-id" class="ref-number fw-bold"></span></p>
-                    
-                    <div class="alert alert-info py-2 text-start" style="font-size: 0.8rem;">
-                        <i class="fas fa-info-circle me-1"></i> 
-                        <strong>Note:</strong> Include the Reference ID in the GCash/Maya message field for faster verification.
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <a href="{{ url_for('upload.upload_proof') }}" class="btn btn-danger w-100 py-2 fw-bold">I Have Paid, Upload Receipt</a>
-                </div>
-            </div>
-
-        </div>
+    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-light btn-sm text-muted">
+             <i class="fa-solid fa-arrow-left me-2"></i> Return to Dashboard
+        </a>
+        <p class="small text-muted mb-0">Powered by <strong>PayMongo</strong></p>
     </div>
 </div>
 
 <script>
-    let selectedType = "";
-    let reqPrice = "";
-    let reqId = "";
+    function payWithPayMongo(reqId) {
+        // Ipakita ang loading screen
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.style.display = 'flex';
 
-    function setPayment(type, el) {
-        document.querySelectorAll('.payment-card').forEach(c => c.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedType = type;
-        document.getElementById('btnProceed').disabled = false;
+        // Tawagin ang backend route para makakuha ng PayMongo link
+        fetch(`/get-payment-link/${reqId}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (data.checkout_url) {
+                // I-redirect ang user sa PayMongo checkout page
+                window.location.href = data.checkout_url;
+            } else {
+                overlay.style.display = 'none';
+                alert("Error: " + (data.error || "Could not generate payment link."));
+            }
+        })
+        .catch(error => {
+            overlay.style.display = 'none';
+            console.error('Error:', error);
+            alert("Something went wrong. Please try again later.");
+        });
     }
-
-    function goToStep2() {
-        document.getElementById('step-1').style.display = 'none';
-        document.getElementById('step-2').style.display = 'block';
-        document.getElementById('method-name').innerText = selectedType;
-        document.getElementById('final-amount').innerText = "₱ " + reqPrice;
-        document.getElementById('ref-id').innerText = "REQ-" + reqId;
-        
-        const qr = document.getElementById('qr-img');
-        if(selectedType === 'GCash') {
-            qr.src = "{{ url_for('static', filename='images/sccqr.jpg') }}";
-        } else {
-            qr.src = "{{ url_for('static', filename='images/mayaqr.jpg') }}"; 
-        }
-    }
-
-    function goToStep1() {
-        document.getElementById('step-1').style.display = 'block';
-        document.getElementById('step-2').style.display = 'none';
-    }
-
-    const modal = document.getElementById('paymentModal');
-    modal.addEventListener('show.bs.modal', function (event) {
-        const btn = event.relatedTarget;
-        reqId = btn.getAttribute('data-reqid');
-        reqPrice = btn.getAttribute('data-price');
-        goToStep1();
-    });
 </script>
 {% endblock %}

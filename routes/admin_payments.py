@@ -69,7 +69,8 @@ def manage_payments(status):
     status_map = {
         'pending': 'Pending Verification',
         'verified': 'PAID',
-        'rejected': 'REJECTED'
+        'rejected': 'REJECTED',
+        'paymongo': 'PAID'  # Special for PayMongo only
     }
     db_status = status_map.get(status, 'Pending Verification')
 
@@ -78,28 +79,26 @@ def manage_payments(status):
     admin_id = session.get('admin_id')
 
     # Build query with role-based filtering
+    base_query = """
+        SELECT p.id AS pay_id, r.id AS req_id, r.firstname, r.lastname,
+               p.amount_paid, p.reference_no, p.proof_image, p.payment_status
+        FROM payments p
+        JOIN requests r ON p.request_id = r.id
+        WHERE p.payment_status = %s
+    """
+    
+    if status == 'paymongo':
+        base_query += " AND p.proof_image = 'paymongo_verified.png'"
+    
+    base_query += " ORDER BY p.date_uploaded DESC"
+    
     if admin_role == 'Super Admin':
         # Super Admin sees all payments
-        query = """
-            SELECT p.id AS pay_id, r.id AS req_id, r.firstname, r.lastname,
-                   p.amount_paid, p.reference_no, p.proof_image, p.payment_status
-            FROM payments p
-            JOIN requests r ON p.request_id = r.id
-            WHERE p.payment_status = %s
-            ORDER BY p.date_uploaded DESC
-        """
-        payments = execute_query(query, (db_status,), fetch_all=True)
+        payments = execute_query(base_query, (db_status,), fetch_all=True)
     else:
         # Record Staff only sees payments for requests they accepted
-        query = """
-            SELECT p.id AS pay_id, r.id AS req_id, r.firstname, r.lastname,
-                   p.amount_paid, p.reference_no, p.proof_image, p.payment_status
-            FROM payments p
-            JOIN requests r ON p.request_id = r.id
-            WHERE p.payment_status = %s AND r.assigned_admin_id = %s
-            ORDER BY p.date_uploaded DESC
-        """
-        payments = execute_query(query, (db_status, admin_id), fetch_all=True)
+        base_query = base_query.replace("WHERE p.payment_status = %s", "WHERE p.payment_status = %s AND r.assigned_admin_id = %s")
+        payments = execute_query(base_query, (db_status, admin_id), fetch_all=True)
 
     return render_template('admin_paymentverify.html', payments=payments, current_status=status)
 
