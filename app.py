@@ -105,6 +105,7 @@ def send_payment_verified_email(student_email, student_name, request_id, documen
 @app.route('/webhook/paymongo', methods=['POST'])
 def paymongo_webhook():
     data = request.get_json()
+    print(f"DEBUG WEBHOOK FULL PAYLOAD: {data}")
     try:
         attr = data.get('data', {}).get('attributes', {}).get('data', {}).get('attributes', {})
         description = attr.get('description', '')
@@ -124,11 +125,24 @@ def paymongo_webhook():
             payment_method = None
             try:
                 payments_list = attr.get('payments', [])
+                print(f"DEBUG WEBHOOK: payments_list length = {len(payments_list) if payments_list else 0}")
                 if payments_list:
-                    pm_attrs = payments_list[0].get('data', {}).get('attributes', {})
+                    first_payment = payments_list[0]
+                    pm_attrs = first_payment.get('data', {}).get('attributes', {})
                     source = pm_attrs.get('source', {})
                     payment_method = source.get('type', None)
-            except Exception:
+                    print(f"DEBUG WEBHOOK: source = {source}")
+                    print(f"DEBUG WEBHOOK: payment_method = {payment_method}")
+                    # Fallback: check payout or fee structure for method
+                    if not payment_method:
+                        payment_method = pm_attrs.get('payment_method_used', None)
+                    if not payment_method:
+                        pm_type = pm_attrs.get('type', None)
+                        if pm_type:
+                            payment_method = pm_type
+                print(f"DEBUG WEBHOOK: final payment_method = {payment_method}")
+            except Exception as pm_e:
+                print(f"DEBUG WEBHOOK: payment method extraction error: {pm_e}")
                 payment_method = None
             
             execute_query("""
