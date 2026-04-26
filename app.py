@@ -107,6 +107,12 @@ def paymongo_webhook():
     data = request.get_json()
     print(f"DEBUG WEBHOOK FULL PAYLOAD: {data}")
     try:
+        # Only process checkout_session.payment.paid (skip payment.paid to avoid duplicate)
+        event_type = data.get('data', {}).get('attributes', {}).get('type', '')
+        if event_type == 'payment.paid':
+            print(f"DEBUG WEBHOOK: Skipping {event_type} (handled via checkout_session event)")
+            return jsonify({"status": "success"}), 200
+        
         attr = data.get('data', {}).get('attributes', {}).get('data', {}).get('attributes', {})
         description = attr.get('description', '')
         
