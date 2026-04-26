@@ -121,26 +121,27 @@ def paymongo_webhook():
             pay_ref = data.get('data', {}).get('id')
             amt = float(attr.get('amount', 0)) / 100
             
-            # Extract payment method (e.g. gcash, grab_pay, card, maya, bank)
+            # Extract payment method (e.g. gcash, grab_pay, card, qrph, maya)
             payment_method = None
             try:
-                payments_list = attr.get('payments', [])
-                print(f"DEBUG WEBHOOK: payments_list length = {len(payments_list) if payments_list else 0}")
-                if payments_list:
-                    first_payment = payments_list[0]
-                    pm_attrs = first_payment.get('data', {}).get('attributes', {})
-                    source = pm_attrs.get('source', {})
-                    payment_method = source.get('type', None)
-                    print(f"DEBUG WEBHOOK: source = {source}")
-                    print(f"DEBUG WEBHOOK: payment_method = {payment_method}")
-                    # Fallback: check payout or fee structure for method
-                    if not payment_method:
-                        payment_method = pm_attrs.get('payment_method_used', None)
-                    if not payment_method:
-                        pm_type = pm_attrs.get('type', None)
-                        if pm_type:
-                            payment_method = pm_type
-                print(f"DEBUG WEBHOOK: final payment_method = {payment_method}")
+                # Path 1: checkout_session events have payment_method_used directly
+                payment_method = attr.get('payment_method_used', None)
+                
+                # Path 2: payment events have source.type directly in attr
+                if not payment_method:
+                    source = attr.get('source', {})
+                    if source:
+                        payment_method = source.get('type', None)
+                
+                # Path 3: checkout_session payments array
+                if not payment_method:
+                    payments_list = attr.get('payments', [])
+                    if payments_list:
+                        pm_attrs = payments_list[0].get('attributes', {})
+                        source = pm_attrs.get('source', {})
+                        payment_method = source.get('type', None)
+                
+                print(f"DEBUG WEBHOOK: payment_method = {payment_method}")
             except Exception as pm_e:
                 print(f"DEBUG WEBHOOK: payment method extraction error: {pm_e}")
                 payment_method = None

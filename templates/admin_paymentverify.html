@@ -78,7 +78,7 @@
                 {% elif current_status == 'rejected' %}
                 REJECTED PAYMENTS
                 {% elif current_status == 'paymongo' %}
-                SUCCESSFUL PAYMONGO TRANSACTIONS
+                SUCCESSFUL ONLINE TRANSACTIONS
                 {% else %}
                 PAYMENT LOGS (AUTOMATED)
                 {% endif %}
@@ -117,8 +117,9 @@
                         </td>
                         <td>
                             {% if p.proof_image == 'paymongo_verified.png' %}
+                            {% set method_map = {'qrph': 'QR Ph (GCash/Maya)', 'gcash': 'GCash', 'grab_pay': 'GrabPay', 'card': 'Credit/Debit Card', 'maya': 'Maya', 'paymaya': 'Maya', 'billease': 'BillEase', 'dob': 'Direct Online Banking', 'dob_ubp': 'UnionBank'} %}
                             <span class="badge bg-success text-white">
-                                <i class="fas fa-credit-card me-1"></i> {{ p.payment_method|default('PayMongo', true)|replace('_', ' ')|title }}
+                                <i class="fas fa-credit-card me-1"></i> {{ method_map.get(p.payment_method, p.payment_method|default('Online', true)|replace('_', ' ')|title) }}
                             </span>
                             {% else %}
                             <span class="badge bg-info text-white">
