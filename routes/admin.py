@@ -550,7 +550,6 @@ def overview():
     context['admin_role'] = admin_role
 
     return render_template('admin_dashboard.html', **context)
-
 # =========================================================
 # ADMIN ROUTES
 # =========================================================
@@ -558,7 +557,6 @@ def overview():
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if session.get('user_email') and session.get('admin_authenticated') is not True:
-        flash("Please use your user portal. Admin login is for admin accounts only.", "warning")
         return redirect(url_for('user.dashboard'))
 
     if session.get('admin_id') and session.get('admin_authenticated') is True:
