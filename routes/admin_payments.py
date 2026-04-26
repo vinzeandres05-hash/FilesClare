@@ -81,7 +81,7 @@ def manage_payments(status):
     # Build query with role-based filtering
     base_query = """
         SELECT p.id AS pay_id, r.id AS req_id, r.firstname, r.lastname,
-               p.amount_paid, p.reference_no, p.proof_image, p.payment_status
+               p.amount_paid, p.reference_no, p.proof_image, p.payment_status, p.payment_method
         FROM payments p
         JOIN requests r ON p.request_id = r.id
         WHERE p.payment_status = %s

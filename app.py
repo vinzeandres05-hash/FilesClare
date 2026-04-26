@@ -119,15 +119,28 @@ def paymongo_webhook():
             
             pay_ref = data.get('data', {}).get('id')
             amt = float(attr.get('amount', 0)) / 100
+            
+            # Extract payment method (e.g. gcash, grab_pay, card, maya, bank)
+            payment_method = None
+            try:
+                payments_list = attr.get('payments', [])
+                if payments_list:
+                    pm_attrs = payments_list[0].get('data', {}).get('attributes', {})
+                    source = pm_attrs.get('source', {})
+                    payment_method = source.get('type', None)
+            except Exception:
+                payment_method = None
+            
             execute_query("""
-                INSERT INTO payments (request_id, reference_no, amount_paid, proof_image, payment_status) 
-                VALUES (%s, %s, %s, 'paymongo_verified.png', 'PAID') 
+                INSERT INTO payments (request_id, reference_no, amount_paid, proof_image, payment_status, payment_method) 
+                VALUES (%s, %s, %s, 'paymongo_verified.png', 'PAID', %s) 
                 ON DUPLICATE KEY UPDATE 
                     reference_no = VALUES(reference_no),
                     amount_paid = VALUES(amount_paid),
                     proof_image = VALUES(proof_image),
-                    payment_status = VALUES(payment_status)
-            """, (req_id, pay_ref, amt))
+                    payment_status = VALUES(payment_status),
+                    payment_method = VALUES(payment_method)
+            """, (req_id, pay_ref, amt, payment_method))
 
             # 3. Kumuha ng data para sa Email
             student = execute_query(

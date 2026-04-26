@@ -118,7 +118,7 @@
                         <td>
                             {% if p.proof_image == 'paymongo_verified.png' %}
                             <span class="badge bg-success text-white">
-                                <i class="fas fa-credit-card me-1"></i> PayMongo
+                                <i class="fas fa-credit-card me-1"></i> {{ p.payment_method|default('PayMongo', true)|replace('_', ' ')|title }}
                             </span>
                             {% else %}
                             <span class="badge bg-info text-white">

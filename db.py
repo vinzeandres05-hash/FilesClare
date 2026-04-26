@@ -190,6 +190,7 @@ def create_tables():
         "ALTER TABLE requests ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL",
         "ALTER TABLE student_info ADD COLUMN IF NOT EXISTS gender VARCHAR(255) AFTER suffix",
         "ALTER TABLE document_types ADD COLUMN IF NOT EXISTS education_level VARCHAR(255) DEFAULT 'All'",
+        "ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_method VARCHAR(100) DEFAULT NULL",
     ]
     conn2 = get_db_connection()
     if conn2:
