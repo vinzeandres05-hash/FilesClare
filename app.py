@@ -133,8 +133,7 @@ def paymongo_webhook():
                 # Map bank institution codes to specific e-wallet apps
                 BANK_CODE_MAP = {
                     'PAPHPHM1XXX': 'maya',
-                    'GCSHPHM2XXX': 'gcash',
-                    'GABORPH1XXX': 'gcash',
+                    'GXCHPHM2XXX': 'gcash',
                     'UBPHPHMMXXX': 'unionbank',
                     'BABORPH1XXX': 'bpi',
                     'ABORPH21XXX': 'rcbc',
