@@ -426,8 +426,8 @@ def overview():
     # 2. Pie Chart Data
     pie_query = f"SELECT status, COUNT(*) as count FROM requests {role_filter} GROUP BY status"
     pie_results = execute_query(pie_query, fetch_all=True)
-    context['pie_labels'] = [r['status'] for r in pie_results]
-    context['pie_counts'] = [r['count'] for r in pie_results]
+    context['pie_labels'] = [r['status'] for r in pie_results or []]
+    context['pie_counts'] = [r['count'] for r in pie_results or []]
 
     # 3. Bar Chart Data (Monthly Volume)
     # Kunin lang ang summary counts per month para sa current year
@@ -441,12 +441,12 @@ def overview():
     COUNT(id) as count
         FROM requests
         {where_clause}
-        GROUP BY DATE_FORMAT(timestamp, '%m')
-        ORDER BY DATE_FORMAT(timestamp, '%m')
+        GROUP BY DATE_FORMAT(timestamp, '%Y-%m'), DATE_FORMAT(timestamp, '%b')
+        ORDER BY DATE_FORMAT(timestamp, '%Y-%m')
     """
     bar_results = execute_query(bar_query, fetch_all=True)
-    context['bar_labels'] = [r['month'] for r in bar_results]
-    context['bar_counts'] = [r['count'] for r in bar_results]
+    context['bar_labels'] = [r['month'] for r in bar_results or []]
+    context['bar_counts'] = [r['count'] for r in bar_results or []]
 
 # D. All Requests Data (Para sa Table sa baba)
     # Walang LIMIT para lumabas lahat ng requests
@@ -828,21 +828,21 @@ def admin_reports():
         paid_count_res = execute_query("SELECT COUNT(*) as count FROM payments WHERE payment_status = 'PAID'", fetch_one=True)
         approved_count = paid_count_res['count'] if paid_count_res else 0
         
-        # Request counts gamit ang FILTER (Best for PostgreSQL)
+        # Request counts
         stats_query = """
             SELECT COUNT(*) as total,
-                   COUNT(*) FILTER (WHERE status = 'Pending') as pending,
-                   COUNT(*) FILTER (WHERE status = 'Completed') as completed
+                   SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending,
+                   SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed
             FROM requests
         """
         stats_result = execute_query(stats_query, fetch_one=True)
 
         # --- 2. Chart Data (Monthly Volume para sa Bar Chart) ---
         bar_query = """
-            SELECT TO_CHAR(timestamp, 'Mon') as month, COUNT(id) as count 
+            SELECT DATE_FORMAT(timestamp, '%b') as month, COUNT(id) as count 
             FROM requests 
-            GROUP BY month, TO_CHAR(timestamp, 'MM') 
-            ORDER BY TO_CHAR(timestamp, 'MM')
+            GROUP BY DATE_FORMAT(timestamp, '%Y-%m'), DATE_FORMAT(timestamp, '%b')
+            ORDER BY DATE_FORMAT(timestamp, '%Y-%m')
         """
         bar_results = execute_query(bar_query, fetch_all=True)
 
